@@ -1,0 +1,7 @@
+title = "GCP Portfolio Gitleaks Config"
+
+[[rules]]
+description = "GCP API Key Placeholder or Philippine Mobile Number"
+id = "block-pii-and-keys"
+regex = '''(?i)(AIza[0-9A-Za-z-_]{35}|(\+63|0)9\d{9})'''
+tags = ["key", "pii"]
