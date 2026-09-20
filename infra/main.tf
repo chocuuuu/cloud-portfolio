@@ -1,4 +1,8 @@
 terraform {
+    backend "gcs" {
+        bucket = "cloud-portfolio-509107-tfstate"
+        prefix = "terraform/state"
+    }
     required_providers {
         google = {
             # This is for lifecycle management of GCP resources including Compute Engine, Cloud Storage, and the like
