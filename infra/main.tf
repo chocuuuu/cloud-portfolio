@@ -1,0 +1,39 @@
+terraform {
+    required_providers {
+        google = {
+            # This is for lifecycle management of GCP resources including Compute Engine, Cloud Storage, and the like
+            source = "hashicorp/google"
+            version = "~> 5.0"
+        }
+    }
+}
+
+provider "google" {
+    project = "cloud-portfolio-509107"
+    # Even though the project was made in SEA, the resources are being created in US-Central1 because of the GCP free tier
+    region  = "us-central1"
+}
+
+# GCS Bucket for Terraform State
+resource "google_storage_bucket" "terraform_state" {
+    name          = "cloud-portfolio-509107-tfstate"
+    location      = "US"
+    force_destroy = true
+
+    # Required to engorce new storage buckets to use Uniform bucket-level access
+    uniform_bucket_level_access = true
+    
+    versioning {
+        enabled = true
+    }
+
+    # Bucket management rule which will delete older versions of objects in the bucket after 5 newer versions are created
+    lifecycle_rule {
+        condition {
+            num_newer_versions = 5
+        }
+        action {
+            type = "Delete"
+        }
+    }
+}
