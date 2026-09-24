@@ -35,7 +35,7 @@ resource "google_storage_bucket" "terraform_state" {
 
     # Required to engorce new storage buckets to use Uniform bucket-level access
     uniform_bucket_level_access = true
-    z
+    
     versioning {
         enabled = true
     }
