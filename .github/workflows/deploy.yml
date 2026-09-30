@@ -9,52 +9,73 @@ on:
       - '.github/workflows/deploy.yml'
 
 jobs:
-    deploy-infra:
-        name: Deploy Infrastructure
-        runs-on: ubuntu-latest
-        
-        # Required permissions for Workload Identity Federation (OIDC)
-        permissions:
-            contents: 'read'
-            id-token: 'write'
+  deploy-infra:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    defaults:
+      run:
+        working-directory: ./infra
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-        defaults:
-            run:
-            working-directory: ./infra
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/240644792863/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-deployer@cloud-portfolio-509107.iam.gserviceaccount.com'
 
-        steps:
-        - name: Checkout Repository
-            uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
-        - name: Authenticate to Google Cloud
-            id: auth
-            uses: google-github-actions/auth@v2
-            with:
-                workload_identity_provider: 'projects/240644792863/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
-                service_account: 'github-actions-deployer@cloud-portfolio-509107.iam.gserviceaccount.com'
+      - name: Terraform Init
+        run: terraform init
 
-        - name: Setup Terraform
-            uses: hashicorp/setup-terraform@v3
+      - name: Terraform Format Check
+        run: terraform fmt -check || true
 
-        - name: Terraform Init
-            run: terraform init
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
 
-        - name: Terraform Format Check
-            run: terraform fmt -check || true
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
 
-        - name: Terraform Plan
-            run: terraform plan -out=tfplan
+  deploy-api:
+    name: Build & Deploy API
+    runs-on: ubuntu-latest
+    # Waits for Terraform to finish successfully
+    needs: deploy-infra 
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-        - name: Terraform Apply
-            run: terraform apply -auto-approve tfplan
-    
-    deploy-api:
-        name: Build and Deploy API
-        runs-on: ubuntu-latest
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/240644792863/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-deployer@cloud-portfolio-509107.iam.gserviceaccount.com'
 
-        # Waits for Terraform to finish
-        needs: deploy-infra 
-        permissions:
-            contents: 'read'
-            id-token: 'write'
-        steps:      
+      - name: Configure Docker Auth
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev
+
+      - name: Build and Push Docker Image
+        working-directory: ./backend
+        run: |
+          docker build -t us-central1-docker.pkg.dev/cloud-portfolio-509107/cloud-portfolio-repo/visitor-api:latest .
+          docker push us-central1-docker.pkg.dev/cloud-portfolio-509107/cloud-portfolio-repo/visitor-api:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy visitor-api \
+            --image us-central1-docker.pkg.dev/cloud-portfolio-509107/cloud-portfolio-repo/visitor-api:latest \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --project cloud-portfolio-509107
