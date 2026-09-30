@@ -3,8 +3,9 @@ const cors = require('cors');
 const { Firestore, FieldValue } = require('@google-cloud/firestore');
 
 const app = express();
-app.use(cors());
+app.use(cors()); 
 app.use(express.json());
+
 // Initialize Firestore
 const firestore = new Firestore();
 
@@ -13,7 +14,7 @@ app.get('/api/visitor-count', async (req, res) => {
         const docRef = firestore.collection('visitors').doc('count');
 
         // Increment the visitor count atomically
-        await docRef.update({
+        await docRef.set({
             count: FieldValue.increment(1)
         }, { merge: true });
 
@@ -30,5 +31,5 @@ app.get('/api/visitor-count', async (req, res) => {
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
-    console.log('Server listening on port ${PORT}');
+    console.log(`Server listening on port ${PORT}`);
 });
