@@ -15,7 +15,7 @@ app.get('/api/visitor-count', async (req, res) => {
         // Increment the visitor count atomically
         await docRef.update({
             count: FieldValue.increment(1)
-        });
+        }, { merge: true });
 
         // Fetch updated document to return new count
         const doc = await docRef.get();
