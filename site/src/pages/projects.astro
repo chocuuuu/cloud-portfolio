@@ -1,0 +1,40 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Projects">
+    <section id="projects">
+        <h1>Projects</h1>
+        <p>
+            Here are some of the projects I have worked on:
+        </p>
+    </section>
+
+    <div class="project-grid" style="display: grid; gap: 2rem; margin-top: 2rem;">
+        <article style="border: 1px solid #ccc; padding: 1.5rem; border-radius: 8px;">
+            <h3>Serverless Cloud Portfolio"</h3>
+            <p>
+                A personal portfolio website built using Astro, showcasing my projects and experiences in cloud computing. The website is designed to be fast, responsive, and easy to navigate.
+            </p>
+            <ul>
+                <li><strong>Tech:</strong> Astro, Cloud Run, Firestore, Terraform</li>
+                <li><strong>Highlight:</strong> Keyless CI/CD deployments and zero-cookie analytics.</li>
+            </ul>
+        </article>
+    </div>
+</Layout>
+
+<style>
+    h1 {
+        color: #0056b3;
+    }
+
+    h3 {
+        margin-bottom: 0.5rem;
+    }
+
+    ul {
+        margin-top: 1rem;
+        margin-left: 1.5rem;
+    }
+</style>
