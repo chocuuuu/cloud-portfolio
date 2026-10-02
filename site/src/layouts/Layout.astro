@@ -1,5 +1,28 @@
 ---
-const { title } = Astro.props
+// Self-hosted fonts: no request to Google Fonts, which fits the zero-cookie, privacy-first posture.
+// Install: npm i @fontsource-variable/bricolage-grotesque @fontsource-variable/source-serif-4
+import '@fontsource-variable/bricolage-grotesque';
+import '@fontsource-variable/source-serif-4';
+
+interface Props {
+	title: string;
+	description?: string;
+}
+
+const {
+	title,
+	description = 'Portfolio of Racell Sincioco, an aspiring cloud engineer building on Google Cloud.',
+} = Astro.props;
+
+const onProjects = Astro.url.pathname.startsWith('/projects');
+const pageTitle = title === 'Home' ? 'Racell Sincioco' : title;
+
+const nav = [
+	{ href: '/#about', label: 'About', id: 'about' },
+	{ href: '/#projects', label: 'Projects', id: 'projects' },
+	{ href: '/#experience', label: 'Experience', id: 'experience' },
+	{ href: '/#contact', label: 'Contact', id: 'contact' },
+];
 ---
 
 <!doctype html>
@@ -7,134 +30,353 @@ const { title } = Astro.props
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta name="description" content={description} />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<link rel="icon" href="/favicon.ico" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title} | Aspiring Cloud Engineer</title>
+		<title>{pageTitle} | Aspiring Cloud Engineer</title>
 	</head>
 	<body>
-		<aside class="sidebar">
-			<div class="brand">
-				<h2>Racell Sincioco</h2>
-				<p2>Aspiring Cloud Engineer</p2>
-			</div>
+		<a class="skip" href="#main">Skip to content</a>
 
-			<nav>
-				<ul>
-					<li><a href="/#about">01 About</a></li>
-					<li><a href="/#projects">02 Projects</a></li>
-					<li><a href="/#experience">03 Experience</a></li>
-					<li><a href="/#contact">04 Contact</a></li>
-				</ul>
-			</nav>
+		<div class="shell">
+			<header class="rail">
+				<a class="brand" href="/">
+					<span class="name">Racell Sincioco</span>
+					<span class="role">Aspiring cloud engineer</span>
+				</a>
 
-			<div class="sidebar-footer">
-				<a href="/resume.pdf" class="btn-download" download>Download Resume</a>
-			</div>
-		</aside>
+				<nav aria-label="Primary">
+					<ul>
+						{
+							nav.map((item) => (
+								<li>
+									<a
+										href={item.href}
+										data-id={item.id}
+										aria-current={onProjects && item.id === 'projects' ? 'page' : undefined}
+									>
+										{item.label}
+									</a>
+								</li>
+							))
+						}
+					</ul>
+				</nav>
 
-		<main class="content">
-			<slot />
-		</main>
+				<a href="/resume.pdf" class="resume" download>Download resume</a>
+			</header>
 
-		<style>
-			:root {
-				--bg-color: #faf8f5;
-				--text-color:#111111;
-				--sidebar-bg-color: #ffffff;
-				--border-color: #e5e5e5;
-				--accent-color: #0056b3;
-				--font-base: system-ui, -apple-system, sans-serif;
+			<main id="main">
+				<div class="page">
+					<slot />
+				</div>
+			</main>
+		</div>
+
+		<script is:inline define:vars={{ onProjects }}>
+			// Mark the section currently in view in the navigation (home page only).
+			if (!onProjects && 'IntersectionObserver' in window) {
+				const links = document.querySelectorAll('nav a[data-id]');
+				const sections = document.querySelectorAll('.page > section[id]');
+				const observer = new IntersectionObserver(
+					(entries) => {
+						for (const entry of entries) {
+							if (!entry.isIntersecting) continue;
+							links.forEach((link) => {
+								if (link.dataset.id === entry.target.id) {
+									link.setAttribute('aria-current', 'location');
+								} else {
+									link.removeAttribute('aria-current');
+								}
+							});
+						}
+					},
+					{ rootMargin: '-30% 0px -60% 0px' }
+				);
+				sections.forEach((section) => observer.observe(section));
 			}
-
-			* {
-				box-sizing: border-box;
-				margin: 0;
-				padding: 0;
-			}
-
-			body {
-				display: flex;
-				font-family: var(--font-base);
-				background-color: var(--bg-color);
-				color: var(--text-color);
-				line-height: 1.6;
-			}
-
-			.sidebar {
-				width: 280px;
-				height: 100vh;
-				position: fixed;
-				background-color: var(--sidebar-bg-color);
-				border-right: 1px solid var(--border-color);
-				display: flex;
-				flex-direction: column;
-				padding: 2rem;
-			}
-
-			.brand h2 {
-				font-size: 1.5rem;
-				font-weight: 700;
-			}
-
-			.brand p {
-				font-size: 0.9rem;
-				color: #666;
-				margin-top: 2rem;
-			}
-
-			nav ul {
-				list-style: none;
-				flex-grow: 1;
-			}
-
-			nav ul li {
-				margin-bottom: 1rem;
-			}
-
-			nav ul li a {
-				text-decoration: none;
-				color: var(--text-color);
-				font-weight: 500;
-				transition: color 0.2s ease;
-			}
-
-			nav ul li a:hover {
-				color: var(--accent-color);
-			}
-
-			.sidebar-footer {
-				margin-top: auto;
-			}
-
-			.btn-download {
-				display: block;
-				text-align: center;
-				padding: 0.75rem;
-				background-color: var(--text-color);
-				color: var(--bg-color);
-				text-decoration: none;
-				border-radius: 4px;
-				font-size: 0.9rem;
-				transition: background 0.2s ease;
-			}
-
-			.btn-download:hover {
-				background-color: var(--accent-color);
-			}
-
-			.content {
-				margin-left: 280px;
-				padding: 4rem;
-				width: calc(100% - 280px);
-				max-width: 1000px;
-			}
-
-			section {
-				min-height: 80vh;
-				margin-bottom: 4rem;
-				padding-top: 2rem;
-			}
-		</style>
+		</script>
 	</body>
 </html>
+
+<style is:global>
+	:root {
+		--fog: #edf0f2;
+		--paper: #fafbfb;
+		--ink: #16212b;
+		--ink-soft: #4a5864;
+		--rule: #c9d2d8;
+		--signal: #2457d6;
+		--live: #12714a;
+		--alert: #b3261e;
+
+		--font-display: 'Bricolage Grotesque Variable', system-ui, sans-serif;
+		--font-text: 'Source Serif 4 Variable', Georgia, serif;
+		--rail-width: 17rem;
+	}
+
+	*,
+	*::before,
+	*::after {
+		box-sizing: border-box;
+	}
+
+	html {
+		scroll-behavior: smooth;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		html {
+			scroll-behavior: auto;
+		}
+	}
+
+	body {
+		margin: 0;
+		background: var(--fog);
+		color: var(--ink);
+		font-family: var(--font-text);
+		font-size: 1.0625rem;
+		line-height: 1.7;
+	}
+
+	h1,
+	h2,
+	h3 {
+		font-family: var(--font-display);
+		line-height: 1.12;
+		letter-spacing: -0.015em;
+		margin: 0 0 1rem;
+		text-wrap: balance;
+	}
+
+	h1 {
+		font-size: clamp(2.1rem, 5vw, 3.25rem);
+		font-weight: 700;
+		letter-spacing: -0.025em;
+	}
+
+	h2 {
+		font-size: clamp(1.5rem, 3vw, 1.9rem);
+		font-weight: 650;
+	}
+
+	h3 {
+		font-size: 1.2rem;
+		font-weight: 600;
+	}
+
+	p,
+	ul,
+	ol,
+	dl {
+		margin: 0 0 1.1rem;
+	}
+
+	a {
+		color: var(--signal);
+		text-underline-offset: 0.2em;
+	}
+
+	a:hover {
+		text-decoration-thickness: 2px;
+	}
+
+	:focus-visible {
+		outline: 3px solid var(--signal);
+		outline-offset: 3px;
+		border-radius: 2px;
+	}
+
+	.page > section {
+		padding: 4rem 0;
+		scroll-margin-top: 1rem;
+	}
+
+	.page > section:first-child {
+		padding-top: 1rem;
+	}
+
+	.page > section + section {
+		border-top: 1px solid var(--rule);
+	}
+
+	@media (max-width: 860px) {
+		.page > section {
+			padding: 3rem 0;
+			scroll-margin-top: 6rem;
+		}
+	}
+</style>
+
+<style>
+	.skip {
+		position: absolute;
+		left: 1rem;
+		top: -4rem;
+		background: var(--ink);
+		color: var(--paper);
+		padding: 0.5rem 1rem;
+		border-radius: 4px;
+		z-index: 20;
+	}
+
+	.skip:focus {
+		top: 1rem;
+	}
+
+	.shell {
+		display: grid;
+		grid-template-columns: var(--rail-width) minmax(0, 1fr);
+		min-height: 100vh;
+	}
+
+	.rail {
+		position: sticky;
+		top: 0;
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		padding: 2.5rem 2rem 2rem;
+		background: var(--paper);
+		border-right: 1px solid var(--rule);
+		font-family: var(--font-display);
+	}
+
+	.brand {
+		color: var(--ink);
+		text-decoration: none;
+		display: block;
+	}
+
+	.name {
+		display: block;
+		font-size: 1.5rem;
+		font-weight: 700;
+		line-height: 1.15;
+		letter-spacing: -0.02em;
+	}
+
+	.role {
+		display: block;
+		margin-top: 0.4rem;
+		font-size: 0.95rem;
+		color: var(--ink-soft);
+	}
+
+	nav {
+		margin-top: 3rem;
+	}
+
+	nav ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	nav a {
+		display: block;
+		padding: 0.4rem 0 0.4rem 0.9rem;
+		margin-left: -0.9rem;
+		border-left: 2px solid transparent;
+		color: var(--ink-soft);
+		text-decoration: none;
+		font-weight: 500;
+		transition: color 0.15s ease, border-color 0.15s ease;
+	}
+
+	nav a:hover {
+		color: var(--ink);
+	}
+
+	nav a[aria-current] {
+		color: var(--ink);
+		font-weight: 650;
+		border-left-color: var(--signal);
+	}
+
+	.resume {
+		margin-top: auto;
+		display: block;
+		text-align: center;
+		padding: 0.7rem 1rem;
+		background: var(--ink);
+		color: var(--paper);
+		text-decoration: none;
+		font-size: 0.95rem;
+		font-weight: 600;
+		border-radius: 4px;
+		transition: background 0.15s ease;
+	}
+
+	.resume:hover {
+		background: var(--signal);
+	}
+
+	main {
+		padding: clamp(1.5rem, 5vw, 4.5rem);
+	}
+
+	.page {
+		max-width: 44rem;
+	}
+
+	@media (max-width: 860px) {
+		.shell {
+			display: block;
+		}
+
+		.rail {
+			position: sticky;
+			height: auto;
+			flex-direction: row;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.4rem 1rem;
+			padding: 0.75rem 1rem;
+			border-right: 0;
+			border-bottom: 1px solid var(--rule);
+			z-index: 10;
+		}
+
+		.name {
+			font-size: 1.2rem;
+		}
+
+		.role {
+			display: none;
+		}
+
+		.resume {
+			margin-top: 0;
+			padding: 0.4rem 0.8rem;
+			font-size: 0.85rem;
+		}
+
+		nav {
+			order: 3;
+			width: 100%;
+			margin-top: 0;
+			overflow-x: auto;
+		}
+
+		nav ul {
+			display: flex;
+			gap: 1.25rem;
+		}
+
+		nav a {
+			margin-left: 0;
+			padding: 0.3rem 0;
+			border-left: 0;
+			border-bottom: 2px solid transparent;
+			white-space: nowrap;
+		}
+
+		nav a[aria-current] {
+			border-bottom-color: var(--signal);
+		}
+	}
+</style>

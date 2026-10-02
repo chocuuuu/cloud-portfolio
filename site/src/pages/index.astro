@@ -1,105 +1,372 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const apiUrl = 'https://visitor-api-240644792863.us-central1.run.app/api/visitor-count';
+
+const email = 'racell.sincioco@gmail.com';
+const linkedin = 'https://www.linkedin.com/in/racell-gabriel-sincioco/';
+const github = ''; // TODO: add your GitHub profile URL; the link appears automatically
+
+// TODO: these three lines are your original placeholders. Replace with real roles and projects.
+const experience = [
+	'Internship at XYZ Cloud Solutions',
+	'Developed a serverless application using AWS Lambda',
+	'Implemented CI/CD pipelines using GitHub Actions',
+];
+
+const skills = [
+	{ group: 'Google Cloud', items: ['Cloud Run', 'Firestore', 'Firebase Hosting', 'BigQuery', 'Artifact Registry'] },
+	{ group: 'Infrastructure and delivery', items: ['Terraform', 'GitHub Actions', 'Workload Identity Federation', 'Gitleaks'] },
+	{ group: 'Application', items: ['Node.js', 'Express', 'Docker', 'Astro'] },
+];
 ---
 
 <Layout title="Home">
-	<!-- ABOUT SECTION -->
 	<section id="about">
-		<h1>About Me</h1>
-		<p>
-			Hello! My name is Racell and I am an aspiring cloud engineer. I have a passion for cloud computing and I am constantly learning new technologies and skills in this field. I am excited to share my journey and experiences with you through this portfolio website.
+		<h1>I'm Racell, an aspiring cloud engineer building on Google Cloud.</h1>
+		<p class="lead">
+			This site is my main project. It runs on Firebase Hosting, Cloud Run and Firestore, is
+			provisioned with Terraform, and deploys from GitHub Actions without long-lived keys. Each
+			engineering decision is written up in the repository.
 		</p>
-		<div class="counter-badge" style="margin-top: 2rem; padding: 1rem; background: #e5e5e5; border-radius: 8px; display: inline-block;">
-			<strong>Profile Views:</strong> <span id="visitor-count">Loading...</span>
-		</div>
+
+		<figure class="path" id="path" data-api={apiUrl}>
+			<ol class="hops">
+				<li class="hop" data-hop="host" data-state="idle">
+					<span class="hop-name">Firebase Hosting</span>
+					<span class="hop-note">Served this page</span>
+				</li>
+				<li class="hop" data-hop="api" data-state="idle">
+					<span class="hop-name">Cloud Run</span>
+					<span class="hop-note">visitor-api</span>
+				</li>
+				<li class="hop" data-hop="db" data-state="idle">
+					<span class="hop-name">Firestore</span>
+					<span class="hop-note">visitors collection</span>
+				</li>
+			</ol>
+			<p class="result">
+				<span class="count" id="visitor-count">–</span>
+				<span class="count-label">profile views</span>
+			</p>
+			<figcaption id="path-status" role="status">
+				This is the live path of the request your browser just made.
+			</figcaption>
+		</figure>
 	</section>
 
-	<hr />
-
-	<!-- PROJECTS SECTION -->
 	<section id="projects">
-		<h1>Projects</h1>
-		<p>
-			Here are some of the projects I have worked on:
-		</p>
-		<ul>
-			<li><a href="/projects/project1">Project 1</a></li>
-			<li><a href="/projects/project2">Project 2</a></li>
-			<li><a href="/projects/project3">Project 3</a></li>
-		</ul>
+		<h2>Projects</h2>
+		<article class="project">
+			<h3><a href="/projects">Serverless cloud portfolio</a></h3>
+			<p>
+				The site you're reading, built as a production-style deployment: static frontend, a
+				containerized API, a database, infrastructure as code, and a keyless delivery pipeline.
+			</p>
+			<p class="tech">Astro, Cloud Run, Firestore, Terraform, GitHub Actions</p>
+		</article>
 	</section>
 
-	<hr />
-
-	<!-- EXPERIENCE SECTION -->
 	<section id="experience">
-		<h1>Experience</h1>
-		<p>
-			I have gained experience in various cloud platforms and technologies through internships and personal projects. Some of the key experiences include:
-		</p>
-		<ul>
-			<li>Internship at XYZ Cloud Solutions</li>
-			<li>Developed a serverless application using AWS Lambda</li>
-			<li>Implemented CI/CD pipelines using GitHub Actions</li>
+		<h2>Experience and skills</h2>
+		<ul class="experience">
+			{experience.map((item) => <li>{item}</li>)}
 		</ul>
+
+		<dl class="skills">
+			{
+				skills.map((s) => (
+					<>
+						<dt>{s.group}</dt>
+						<dd>{s.items.join(', ')}</dd>
+					</>
+				))
+			}
+		</dl>
 	</section>
 
-	<hr />
-
-	<!-- CONTACT SECTION -->
 	<section id="contact">
-		<h1>Contact</h1>
-		<p>
-			If you would like to get in touch with me, please feel free to reach out via email or connect with me on LinkedIn.
-		</p>
-		<ul>
-			<li>Email: <a href="mailto:racell.sincioco@gmail.com">racell.sincioco@gmail.com</a></li>
-			<li>LinkedIn: <a href="https://www.linkedin.com/in/racell-gabriel-sincioco/" target="_blank">Racell Sincioco</a></li>
-		</ul>
+		<h2>Contact</h2>
+		<p>Email is the fastest way to reach me. I'm also on LinkedIn.</p>
+		<dl class="contact">
+			<dt>Email</dt>
+			<dd>
+				<a href={`mailto:${email}`}>{email}</a>
+				<button type="button" class="copy" data-copy={email}>Copy email</button>
+			</dd>
+			<dt>LinkedIn</dt>
+			<dd><a href={linkedin} target="_blank" rel="noopener">Racell Sincioco</a></dd>
+			{
+				github && (
+					<>
+						<dt>GitHub</dt>
+						<dd>
+							<a href={github} target="_blank" rel="noopener">Source for this site</a>
+						</dd>
+					</>
+				)
+			}
+		</dl>
 	</section>
 </Layout>
 
 <script>
-	// Fetch live data from deployed Cloud Run container
-	async function updateVisitorCount() {
-		const counterElement = document.getElementById('visitor-count');
-		
-		
-		try {
-			const response = await fetch('https://visitor-api-240644792863.us-central1.run.app/api/visitor-count');
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
+	// Visitor counter. Each hop lights up as the real request reaches it.
+	const root = document.getElementById('path');
+
+	if (root) {
+		const api = root.dataset.api as string;
+		const count = document.getElementById('visitor-count') as HTMLElement;
+		const status = document.getElementById('path-status') as HTMLElement;
+		const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+		const setHop = (name: string, state: string) =>
+			root.querySelector(`[data-hop="${name}"]`)?.setAttribute('data-state', state);
+		const pause = (ms: number) => new Promise((r) => setTimeout(r, calm ? 0 : ms));
+
+		const run = async () => {
+			setHop('host', 'done');
+			await pause(350);
+			setHop('api', 'active');
+			status.textContent = 'Waiting for Cloud Run. A cold start can take a few seconds.';
+
+			try {
+				const res = await fetch(api);
+				if (!res.ok) throw new Error(`HTTP ${res.status}`);
+				const data = await res.json();
+
+				setHop('api', 'done');
+				await pause(350);
+				setHop('db', 'done');
+				count.textContent = Number(data.count).toLocaleString();
+				status.textContent = 'Your visit was counted. Cloud Run wrote it to Firestore.';
+			} catch {
+				setHop('api', 'error');
+				count.textContent = 'Unavailable';
+				status.textContent = 'The API did not respond. The rest of the site works without it.';
 			}
-			const data = await response.json();
-			if (counterElement) {
-				counterElement.innerText = data.count;
-			} 
-		} catch (error) {
-			if (counterElement) {
-				counterElement.innerText = 'Unavailable';
-			}
-		}
+		};
+
+		run();
 	}
-	updateVisitorCount();
+
+	// Click-to-copy email.
+	const copyButton = document.querySelector<HTMLButtonElement>('[data-copy]');
+
+	copyButton?.addEventListener('click', async () => {
+		const original = copyButton.textContent;
+		try {
+			await navigator.clipboard.writeText(copyButton.dataset.copy as string);
+			copyButton.textContent = 'Copied';
+		} catch {
+			copyButton.textContent = 'Copy failed';
+		}
+		setTimeout(() => (copyButton.textContent = original), 2000);
+	});
 </script>
 
-<style> 
-	h1, h2 {
-		margin-bottom: 1rem;
-		color: #0056b3;
-	}
-	
-	p, ul {
-		margin-bottom: 1rem;
-	}
-
-	ul {
-		margin-left: 1.5rem;
+<style>
+	.lead {
+		font-size: 1.25rem;
+		line-height: 1.6;
+		color: var(--ink-soft);
+		max-width: 38rem;
+		margin-bottom: 2.5rem;
 	}
 
-	hr {
-		margin: 3rem 0;
-		border: 0;
-		border-top: 1px solid #ddd;
+	/* Live request path */
+	.path {
+		margin: 0;
+		padding: 1.75rem 1.75rem 1.25rem;
+		background: var(--paper);
+		border: 1px solid var(--rule);
+		border-radius: 6px;
+		font-family: var(--font-display);
+	}
+
+	.hops {
+		list-style: none;
+		margin: 0 0 1.75rem;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+	}
+
+	.hop {
+		position: relative;
+		padding-top: 1.6rem;
+		padding-right: 0.75rem;
+	}
+
+	.hop::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 0.85rem;
+		height: 0.85rem;
+		border-radius: 50%;
+		background: var(--paper);
+		border: 2px solid var(--rule);
+		z-index: 1;
+		transition: background 0.3s ease, border-color 0.3s ease;
+	}
+
+	.hop::after {
+		content: '';
+		position: absolute;
+		top: calc(0.425rem - 1px);
+		left: 0.85rem;
+		right: 0;
+		height: 2px;
+		background: var(--rule);
+		transition: background 0.3s ease;
+	}
+
+	.hop:last-child::after {
+		display: none;
+	}
+
+	.hop-name {
+		display: block;
+		font-weight: 650;
+		line-height: 1.25;
+	}
+
+	.hop-note {
+		display: block;
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+	}
+
+	.hop[data-state='active']::before {
+		border-color: var(--signal);
+		animation: pulse 1.2s ease-in-out infinite;
+	}
+
+	.hop[data-state='done']::before {
+		background: var(--live);
+		border-color: var(--live);
+	}
+
+	.hop[data-state='done']::after {
+		background: var(--live);
+	}
+
+	.hop[data-state='error']::before {
+		background: var(--alert);
+		border-color: var(--alert);
+	}
+
+	@keyframes pulse {
+		50% {
+			box-shadow: 0 0 0 0.4rem rgba(36, 87, 214, 0.22);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.hop[data-state='active']::before {
+			animation: none;
+			background: var(--signal);
+		}
+	}
+
+	.result {
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		margin: 0 0 0.75rem;
+	}
+
+	.count {
+		font-size: 2.75rem;
+		font-weight: 700;
+		line-height: 1;
+		letter-spacing: -0.03em;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.count-label {
+		color: var(--ink-soft);
+	}
+
+	figcaption {
+		margin: 0;
+		padding-top: 0.75rem;
+		border-top: 1px solid var(--rule);
+		font-size: 0.9rem;
+		color: var(--ink-soft);
+	}
+
+	/* Projects */
+	.project h3 {
+		margin-bottom: 0.4rem;
+	}
+
+	.tech {
+		font-family: var(--font-display);
+		font-size: 0.95rem;
+		color: var(--ink-soft);
+	}
+
+	/* Experience and skills */
+	.experience {
+		margin-left: 1.25rem;
+		margin-bottom: 2rem;
+	}
+
+	.skills,
+	.contact {
+		display: grid;
+		grid-template-columns: 12rem 1fr;
+		gap: 0.6rem 1.5rem;
+		margin: 0;
+	}
+
+	dt {
+		font-family: var(--font-display);
+		font-weight: 600;
+		color: var(--ink-soft);
+	}
+
+	dd {
+		margin: 0;
+	}
+
+	.copy {
+		margin-left: 0.75rem;
+		padding: 0.15rem 0.7rem;
+		font-family: var(--font-display);
+		font-size: 0.85rem;
+		font-weight: 500;
+		color: var(--ink);
+		background: transparent;
+		border: 1px solid var(--ink-soft);
+		border-radius: 4px;
+		cursor: pointer;
+	}
+
+	.copy:hover {
+		background: var(--paper);
+	}
+
+	@media (max-width: 560px) {
+		.skills,
+		.contact {
+			grid-template-columns: 1fr;
+			gap: 0.1rem;
+		}
+
+		dd {
+			margin-bottom: 0.9rem;
+		}
+
+		.path {
+			padding: 1.25rem 1rem 1rem;
+		}
+
+		.hop-name {
+			font-size: 0.95rem;
+		}
 	}
 </style>
