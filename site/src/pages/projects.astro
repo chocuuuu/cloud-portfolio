@@ -1,86 +1,61 @@
 ---
-import Layout from '../layouts/Layout.astro';
-
-const repo = ''; // TODO: add your public GitHub repo URL; the link appears automatically
+import Layout from "../layouts/Layout.astro";
+import { projects } from "../data/site";
 ---
 
-<Layout title="Projects" description="Projects by Racell Sincioco, with architecture and engineering notes.">
-	<section id="projects">
-		<h1>Projects</h1>
+<Layout
+  title="Projects"
+  description="Projects with architecture and engineering notes."
+>
+  <section id="projects">
+    <h1>Projects</h1>
 
-		<article class="project">
-			<h2>Serverless cloud portfolio</h2>
-			<p>
-				A portfolio built like a production deployment rather than a template. The frontend is a
-				static Astro site on Firebase Hosting. A containerized Node.js API on Cloud Run counts
-				visits in Firestore, and everything is provisioned with Terraform.
-			</p>
+    {
+      projects.map((p) => (
+        <article class="project" id={p.slug}>
+          <h2>{p.title}</h2>
+          <p>{p.summary}</p>
 
-			<dl class="facts">
-				<dt>Stack</dt>
-				<dd>Astro, Firebase Hosting, Cloud Run, Firestore, Terraform, GitHub Actions, BigQuery</dd>
+          <dl class="rows facts">
+            <dt>Stack</dt>
+            <dd>{p.stack.join(", ")}</dd>
+            {p.details.map((d) => (
+              <>
+                <dt>{d.label}</dt>
+                <dd>{d.text}</dd>
+              </>
+            ))}
+          </dl>
 
-				<dt>Delivery</dt>
-				<dd>
-					GitHub Actions authenticates with Workload Identity Federation, so no static service
-					account keys exist anywhere. Gitleaks blocks commits that contain secrets.
-				</dd>
-
-				<dt>Analytics</dt>
-				<dd>
-					No tracking scripts or cookies. Firebase Hosting access logs are routed to BigQuery and
-					queried with standard SQL.
-				</dd>
-
-				<dt>Decisions</dt>
-				<dd>Each major choice is recorded as an Architecture Decision Record in the repository.</dd>
-			</dl>
-
-			{
-				repo && (
-					<p>
-						<a href={repo} target="_blank" rel="noopener">
-							View the source on GitHub
-						</a>
-					</p>
-				)
-			}
-		</article>
-	</section>
+          {p.links.length > 0 && (
+            <p class="links">
+              {p.links.map((l) => (
+                <a href={l.href} target="_blank" rel="noopener">
+                  {l.label}
+                </a>
+              ))}
+            </p>
+          )}
+        </article>
+      ))
+    }
+  </section>
 </Layout>
 
 <style>
-	.project h2 {
-		font-size: 1.6rem;
-	}
+  .project + .project {
+    margin-top: 4rem;
+    padding-top: 4rem;
+    border-top: 1px solid var(--rule);
+  }
 
-	.facts {
-		display: grid;
-		grid-template-columns: 9rem 1fr;
-		gap: 0.75rem 1.5rem;
-		margin: 2rem 0 1.5rem;
-		padding-top: 1.5rem;
-		border-top: 1px solid var(--rule);
-	}
+  .facts {
+    margin: 2rem 0 1.5rem;
+  }
 
-	dt {
-		font-family: var(--font-display);
-		font-weight: 600;
-		color: var(--ink-soft);
-	}
-
-	dd {
-		margin: 0;
-	}
-
-	@media (max-width: 560px) {
-		.facts {
-			grid-template-columns: 1fr;
-			gap: 0.1rem;
-		}
-
-		dd {
-			margin-bottom: 0.9rem;
-		}
-	}
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
 </style>
