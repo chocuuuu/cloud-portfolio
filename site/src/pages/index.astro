@@ -1,372 +1,501 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
+import {
+  profile,
+  certifications,
+  inProgress,
+  projects,
+  experience,
+  skills,
+} from "../data/site";
 
-const apiUrl = 'https://visitor-api-240644792863.us-central1.run.app/api/visitor-count';
-
-const email = 'racell.sincioco@gmail.com';
-const linkedin = 'https://www.linkedin.com/in/racell-gabriel-sincioco/';
-const github = ''; // TODO: add your GitHub profile URL; the link appears automatically
-
-// TODO: these three lines are your original placeholders. Replace with real roles and projects.
-const experience = [
-	'Internship at XYZ Cloud Solutions',
-	'Developed a serverless application using AWS Lambda',
-	'Implemented CI/CD pipelines using GitHub Actions',
-];
-
-const skills = [
-	{ group: 'Google Cloud', items: ['Cloud Run', 'Firestore', 'Firebase Hosting', 'BigQuery', 'Artifact Registry'] },
-	{ group: 'Infrastructure and delivery', items: ['Terraform', 'GitHub Actions', 'Workload Identity Federation', 'Gitleaks'] },
-	{ group: 'Application', items: ['Node.js', 'Express', 'Docker', 'Astro'] },
-];
+const showCerts = certifications.length > 0 || inProgress.length > 0;
 ---
 
 <Layout title="Home">
-	<section id="about">
-		<h1>I'm Racell, an aspiring cloud engineer building on Google Cloud.</h1>
-		<p class="lead">
-			This site is my main project. It runs on Firebase Hosting, Cloud Run and Firestore, is
-			provisioned with Terraform, and deploys from GitHub Actions without long-lived keys. Each
-			engineering decision is written up in the repository.
-		</p>
+  <section id="about">
+    <h1>{profile.name}</h1>
+    <p class="role-line">{profile.role}</p>
 
-		<figure class="path" id="path" data-api={apiUrl}>
-			<ol class="hops">
-				<li class="hop" data-hop="host" data-state="idle">
-					<span class="hop-name">Firebase Hosting</span>
-					<span class="hop-note">Served this page</span>
-				</li>
-				<li class="hop" data-hop="api" data-state="idle">
-					<span class="hop-name">Cloud Run</span>
-					<span class="hop-note">visitor-api</span>
-				</li>
-				<li class="hop" data-hop="db" data-state="idle">
-					<span class="hop-name">Firestore</span>
-					<span class="hop-note">visitors collection</span>
-				</li>
-			</ol>
-			<p class="result">
-				<span class="count" id="visitor-count">–</span>
-				<span class="count-label">profile views</span>
-			</p>
-			<figcaption id="path-status" role="status">
-				This is the live path of the request your browser just made.
-			</figcaption>
-		</figure>
-	</section>
+    <div class="about">
+      {
+        profile.photo && (
+          <img
+            class="photo"
+            src={profile.photo}
+            alt={`Portrait of ${profile.name}`}
+            width="144"
+            height="180"
+          />
+        )
+      }
+      <div>
+        {profile.about.map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+    </div>
 
-	<section id="projects">
-		<h2>Projects</h2>
-		<article class="project">
-			<h3><a href="/projects">Serverless cloud portfolio</a></h3>
-			<p>
-				The site you're reading, built as a production-style deployment: static frontend, a
-				containerized API, a database, infrastructure as code, and a keyless delivery pipeline.
-			</p>
-			<p class="tech">Astro, Cloud Run, Firestore, Terraform, GitHub Actions</p>
-		</article>
-	</section>
+    <figure class="path" id="path" data-api={profile.visitorApi}>
+      <ol class="hops">
+        <li class="hop" data-hop="host" data-state="idle">
+          <span class="hop-name">Firebase Hosting</span>
+          <span class="hop-note">Served this page</span>
+        </li>
+        <li class="hop" data-hop="api" data-state="idle">
+          <span class="hop-name">Cloud Run</span>
+          <span class="hop-note">visitor-api</span>
+        </li>
+        <li class="hop" data-hop="db" data-state="idle">
+          <span class="hop-name">Firestore</span>
+          <span class="hop-note">visitors</span>
+        </li>
+      </ol>
+      <p class="result">
+        <span class="count" id="visitor-count">–</span>
+        <span class="count-label">profile views</span>
+      </p>
+      <figcaption id="path-status" role="status">
+        This is the live path of the request your browser just made.
+      </figcaption>
+    </figure>
+  </section>
 
-	<section id="experience">
-		<h2>Experience and skills</h2>
-		<ul class="experience">
-			{experience.map((item) => <li>{item}</li>)}
-		</ul>
+  {
+    showCerts && (
+      <section id="certifications">
+        <h2>Certifications</h2>
+        {certifications.length > 0 && (
+          <ul class="certs">
+            {certifications.map((c) => (
+              <li class="cert">
+                {c.image && (
+                  <img
+                    src={c.image}
+                    alt=""
+                    width="72"
+                    height="72"
+                    loading="lazy"
+                  />
+                )}
+                <span class="cert-name">{c.name}</span>
+                {c.code && <span class="cert-code">{c.code}</span>}
+                {c.url && (
+                  <a href={c.url} target="_blank" rel="noopener">
+                    Verify
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {inProgress.length > 0 && (
+          <>
+            <h3>In progress</h3>
+            <ul class="plain">
+              {inProgress.map((c) => (
+                <li>
+                  {c.name}
+                  {c.code && <span class="muted"> ({c.code})</span>}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    )
+  }
 
-		<dl class="skills">
-			{
-				skills.map((s) => (
-					<>
-						<dt>{s.group}</dt>
-						<dd>{s.items.join(', ')}</dd>
-					</>
-				))
-			}
-		</dl>
-	</section>
+  <section id="projects">
+    <h2>Projects</h2>
+    {
+      projects.map((p) => (
+        <article class="project">
+          <h3>
+            <a href="/projects">{p.title}</a>
+          </h3>
+          <p>{p.summary}</p>
+          <p class="tech">{p.stack.join(", ")}</p>
+        </article>
+      ))
+    }
+  </section>
 
-	<section id="contact">
-		<h2>Contact</h2>
-		<p>Email is the fastest way to reach me. I'm also on LinkedIn.</p>
-		<dl class="contact">
-			<dt>Email</dt>
-			<dd>
-				<a href={`mailto:${email}`}>{email}</a>
-				<button type="button" class="copy" data-copy={email}>Copy email</button>
-			</dd>
-			<dt>LinkedIn</dt>
-			<dd><a href={linkedin} target="_blank" rel="noopener">Racell Sincioco</a></dd>
-			{
-				github && (
-					<>
-						<dt>GitHub</dt>
-						<dd>
-							<a href={github} target="_blank" rel="noopener">Source for this site</a>
-						</dd>
-					</>
-				)
-			}
-		</dl>
-	</section>
+  {
+    experience.length > 0 && (
+      <section id="experience">
+        <h2>Experience</h2>
+        {experience.map((e) => (
+          <article class="job">
+            <h3>
+              {e.role}, {e.company}
+            </h3>
+            <p class="muted">{e.period}</p>
+            <ul>
+              {e.bullets.map((b) => (
+                <li>{b}</li>
+              ))}
+            </ul>
+          </article>
+        ))}
+      </section>
+    )
+  }
+
+  <section id="skills">
+    <h2>Skills</h2>
+    <dl class="rows">
+      {
+        skills.map((s) => (
+          <>
+            <dt>{s.group}</dt>
+            <dd>{s.items.join(", ")}</dd>
+          </>
+        ))
+      }
+    </dl>
+  </section>
+
+  <section id="contact">
+    <h2>Contact</h2>
+    <dl class="rows">
+      <dt>Email</dt>
+      <dd>
+        <a href={`mailto:${profile.email}`}>{profile.email}</a>
+        <button type="button" class="copy" data-copy={profile.email}
+          >Copy</button
+        >
+      </dd>
+      <dt>LinkedIn</dt>
+      <dd>
+        <a href={profile.linkedin} target="_blank" rel="noopener"
+          >{profile.linkedin.replace("https://www.", "")}</a>
+      </dd>
+      {
+        profile.github && (
+          <>
+            <dt>GitHub</dt>
+            <dd>
+              <a href={profile.github} target="_blank" rel="noopener">
+                {profile.github.replace("https://", "")}
+              </a>
+            </dd>
+          </>
+        )
+      }
+      <dt>Resume</dt>
+      <dd><a href={profile.resume} download>Download PDF</a></dd>
+    </dl>
+  </section>
 </Layout>
 
 <script>
-	// Visitor counter. Each hop lights up as the real request reaches it.
-	const root = document.getElementById('path');
+  // Visitor counter: each hop lights up as the real request reaches it.
+  const root = document.getElementById("path");
 
-	if (root) {
-		const api = root.dataset.api as string;
-		const count = document.getElementById('visitor-count') as HTMLElement;
-		const status = document.getElementById('path-status') as HTMLElement;
-		const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (root) {
+    const api = root.dataset.api as string;
+    const count = document.getElementById("visitor-count") as HTMLElement;
+    const status = document.getElementById("path-status") as HTMLElement;
+    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-		const setHop = (name: string, state: string) =>
-			root.querySelector(`[data-hop="${name}"]`)?.setAttribute('data-state', state);
-		const pause = (ms: number) => new Promise((r) => setTimeout(r, calm ? 0 : ms));
+    const setHop = (name: string, state: string) =>
+      root
+        .querySelector(`[data-hop="${name}"]`)
+        ?.setAttribute("data-state", state);
+    const pause = (ms: number) =>
+      new Promise((r) => setTimeout(r, calm ? 0 : ms));
 
-		const run = async () => {
-			setHop('host', 'done');
-			await pause(350);
-			setHop('api', 'active');
-			status.textContent = 'Waiting for Cloud Run. A cold start can take a few seconds.';
+    const run = async () => {
+      setHop("host", "done");
+      await pause(350);
+      setHop("api", "active");
+      status.textContent =
+        "Waiting for Cloud Run. A cold start can take a few seconds.";
 
-			try {
-				const res = await fetch(api);
-				if (!res.ok) throw new Error(`HTTP ${res.status}`);
-				const data = await res.json();
+      try {
+        const res = await fetch(api);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
-				setHop('api', 'done');
-				await pause(350);
-				setHop('db', 'done');
-				count.textContent = Number(data.count).toLocaleString();
-				status.textContent = 'Your visit was counted. Cloud Run wrote it to Firestore.';
-			} catch {
-				setHop('api', 'error');
-				count.textContent = 'Unavailable';
-				status.textContent = 'The API did not respond. The rest of the site works without it.';
-			}
-		};
+        setHop("api", "done");
+        await pause(350);
+        setHop("db", "done");
+        count.textContent = Number(data.count).toLocaleString();
+        status.textContent =
+          "Your visit was counted. Cloud Run wrote it to Firestore.";
+      } catch {
+        setHop("api", "error");
+        count.textContent = "Unavailable";
+        status.textContent =
+          "The API did not respond. The rest of the site works without it.";
+      }
+    };
 
-		run();
-	}
+    run();
+  }
 
-	// Click-to-copy email.
-	const copyButton = document.querySelector<HTMLButtonElement>('[data-copy]');
+  // Click-to-copy email.
+  const copyButton = document.querySelector<HTMLButtonElement>("[data-copy]");
 
-	copyButton?.addEventListener('click', async () => {
-		const original = copyButton.textContent;
-		try {
-			await navigator.clipboard.writeText(copyButton.dataset.copy as string);
-			copyButton.textContent = 'Copied';
-		} catch {
-			copyButton.textContent = 'Copy failed';
-		}
-		setTimeout(() => (copyButton.textContent = original), 2000);
-	});
+  copyButton?.addEventListener("click", async () => {
+    const original = copyButton.textContent;
+    try {
+      await navigator.clipboard.writeText(copyButton.dataset.copy as string);
+      copyButton.textContent = "Copied";
+    } catch {
+      copyButton.textContent = "Copy failed";
+    }
+    setTimeout(() => (copyButton.textContent = original), 2000);
+  });
 </script>
 
 <style>
-	.lead {
-		font-size: 1.25rem;
-		line-height: 1.6;
-		color: var(--ink-soft);
-		max-width: 38rem;
-		margin-bottom: 2.5rem;
-	}
+  .role-line {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    color: var(--ink-soft);
+    margin-bottom: 2.5rem;
+  }
 
-	/* Live request path */
-	.path {
-		margin: 0;
-		padding: 1.75rem 1.75rem 1.25rem;
-		background: var(--paper);
-		border: 1px solid var(--rule);
-		border-radius: 6px;
-		font-family: var(--font-display);
-	}
+  .about {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    margin-bottom: 2.5rem;
+  }
 
-	.hops {
-		list-style: none;
-		margin: 0 0 1.75rem;
-		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-	}
+  .about > div {
+    min-width: 0;
+    flex: 1;
+  }
 
-	.hop {
-		position: relative;
-		padding-top: 1.6rem;
-		padding-right: 0.75rem;
-	}
+  .photo {
+    flex: none;
+    width: 9rem;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 4px;
+  }
 
-	.hop::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: 0.85rem;
-		height: 0.85rem;
-		border-radius: 50%;
-		background: var(--paper);
-		border: 2px solid var(--rule);
-		z-index: 1;
-		transition: background 0.3s ease, border-color 0.3s ease;
-	}
+  @media (max-width: 560px) {
+    .about {
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+  }
 
-	.hop::after {
-		content: '';
-		position: absolute;
-		top: calc(0.425rem - 1px);
-		left: 0.85rem;
-		right: 0;
-		height: 2px;
-		background: var(--rule);
-		transition: background 0.3s ease;
-	}
+  /* Live request path */
+  .path {
+    margin: 0;
+    padding: 1.5rem;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-family: var(--font-display);
+  }
 
-	.hop:last-child::after {
-		display: none;
-	}
+  .hops {
+    list-style: none;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 
-	.hop-name {
-		display: block;
-		font-weight: 650;
-		line-height: 1.25;
-	}
+  .hop {
+    position: relative;
+    padding: 1.5rem 0.75rem 0 0;
+  }
 
-	.hop-note {
-		display: block;
-		font-size: 0.9rem;
-		color: var(--ink-soft);
-	}
+  .hop::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 2px solid var(--rule);
+    z-index: 1;
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease;
+  }
 
-	.hop[data-state='active']::before {
-		border-color: var(--signal);
-		animation: pulse 1.2s ease-in-out infinite;
-	}
+  .hop::after {
+    content: "";
+    position: absolute;
+    top: calc(0.425rem - 1px);
+    left: 0.85rem;
+    right: 0;
+    height: 2px;
+    background: var(--rule);
+    transition: background 0.3s ease;
+  }
 
-	.hop[data-state='done']::before {
-		background: var(--live);
-		border-color: var(--live);
-	}
+  .hop:last-child::after {
+    display: none;
+  }
 
-	.hop[data-state='done']::after {
-		background: var(--live);
-	}
+  .hop-name {
+    display: block;
+    font-weight: 650;
+    line-height: 1.25;
+  }
 
-	.hop[data-state='error']::before {
-		background: var(--alert);
-		border-color: var(--alert);
-	}
+  .hop-note {
+    display: block;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
 
-	@keyframes pulse {
-		50% {
-			box-shadow: 0 0 0 0.4rem rgba(36, 87, 214, 0.22);
-		}
-	}
+  .hop[data-state="active"]::before {
+    border-color: var(--signal);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
 
-	@media (prefers-reduced-motion: reduce) {
-		.hop[data-state='active']::before {
-			animation: none;
-			background: var(--signal);
-		}
-	}
+  .hop[data-state="done"]::before {
+    background: var(--live);
+    border-color: var(--live);
+  }
 
-	.result {
-		display: flex;
-		align-items: baseline;
-		gap: 0.6rem;
-		margin: 0 0 0.75rem;
-	}
+  .hop[data-state="done"]::after {
+    background: var(--live);
+  }
 
-	.count {
-		font-size: 2.75rem;
-		font-weight: 700;
-		line-height: 1;
-		letter-spacing: -0.03em;
-		font-variant-numeric: tabular-nums;
-	}
+  .hop[data-state="error"]::before {
+    background: var(--alert);
+    border-color: var(--alert);
+  }
 
-	.count-label {
-		color: var(--ink-soft);
-	}
+  @keyframes pulse {
+    50% {
+      box-shadow: 0 0 0 0.4rem rgba(36, 87, 214, 0.22);
+    }
+  }
 
-	figcaption {
-		margin: 0;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--rule);
-		font-size: 0.9rem;
-		color: var(--ink-soft);
-	}
+  @media (prefers-reduced-motion: reduce) {
+    .hop[data-state="active"]::before {
+      animation: none;
+      background: var(--signal);
+    }
+  }
 
-	/* Projects */
-	.project h3 {
-		margin-bottom: 0.4rem;
-	}
+  .result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.6rem;
+    margin: 0 0 0.75rem;
+  }
 
-	.tech {
-		font-family: var(--font-display);
-		font-size: 0.95rem;
-		color: var(--ink-soft);
-	}
+  .count {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
 
-	/* Experience and skills */
-	.experience {
-		margin-left: 1.25rem;
-		margin-bottom: 2rem;
-	}
+  .count-label {
+    color: var(--ink-soft);
+  }
 
-	.skills,
-	.contact {
-		display: grid;
-		grid-template-columns: 12rem 1fr;
-		gap: 0.6rem 1.5rem;
-		margin: 0;
-	}
+  figcaption {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
 
-	dt {
-		font-family: var(--font-display);
-		font-weight: 600;
-		color: var(--ink-soft);
-	}
+  @media (max-width: 420px) {
+    .path {
+      padding: 1.1rem 1rem;
+    }
 
-	dd {
-		margin: 0;
-	}
+    .hop-name {
+      font-size: 0.9rem;
+    }
+  }
 
-	.copy {
-		margin-left: 0.75rem;
-		padding: 0.15rem 0.7rem;
-		font-family: var(--font-display);
-		font-size: 0.85rem;
-		font-weight: 500;
-		color: var(--ink);
-		background: transparent;
-		border: 1px solid var(--ink-soft);
-		border-radius: 4px;
-		cursor: pointer;
-	}
+  /* Certifications */
+  .certs {
+    list-style: none;
+    margin: 0 0 2rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: 1rem;
+  }
 
-	.copy:hover {
-		background: var(--paper);
-	}
+  .cert {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+  }
 
-	@media (max-width: 560px) {
-		.skills,
-		.contact {
-			grid-template-columns: 1fr;
-			gap: 0.1rem;
-		}
+  .cert img {
+    margin-bottom: 0.6rem;
+  }
 
-		dd {
-			margin-bottom: 0.9rem;
-		}
+  .cert-name {
+    font-weight: 600;
+    line-height: 1.3;
+  }
 
-		.path {
-			padding: 1.25rem 1rem 1rem;
-		}
+  .cert-code,
+  .muted {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
 
-		.hop-name {
-			font-size: 0.95rem;
-		}
-	}
+  .plain {
+    list-style: none;
+    padding: 0;
+  }
+
+  /* Projects and experience */
+  .project h3,
+  .job h3 {
+    margin-bottom: 0.4rem;
+  }
+
+  .tech {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  .job + .job {
+    margin-top: 2rem;
+  }
+
+  .job ul {
+    padding-left: 1.25rem;
+  }
+
+  .copy {
+    margin-left: 0.75rem;
+    padding: 0.1rem 0.7rem;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .copy:hover {
+    background: var(--paper);
+    border-color: var(--ink-soft);
+  }
 </style>
