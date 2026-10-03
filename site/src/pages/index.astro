@@ -33,30 +33,6 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
         {profile.about.map((paragraph) => <p>{paragraph}</p>)}
       </div>
     </div>
-
-    <figure class="path" id="path" data-api={profile.visitorApi}>
-      <ol class="hops">
-        <li class="hop" data-hop="host" data-state="idle">
-          <span class="hop-name">Firebase Hosting</span>
-          <span class="hop-note">Served this page</span>
-        </li>
-        <li class="hop" data-hop="api" data-state="idle">
-          <span class="hop-name">Cloud Run</span>
-          <span class="hop-note">visitor-api</span>
-        </li>
-        <li class="hop" data-hop="db" data-state="idle">
-          <span class="hop-name">Firestore</span>
-          <span class="hop-note">visitors</span>
-        </li>
-      </ol>
-      <p class="result">
-        <span class="count" id="visitor-count">–</span>
-        <span class="count-label">profile views</span>
-      </p>
-      <figcaption id="path-status" role="status">
-        This is the live path of the request your browser just made.
-      </figcaption>
-    </figure>
   </section>
 
   {
@@ -77,6 +53,7 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
                   />
                 )}
                 <span class="cert-name">{c.name}</span>
+                {c.issuer && <span class="muted">{c.issuer}</span>}
                 {c.code && <span class="cert-code">{c.code}</span>}
                 {c.url && (
                   <a href={c.url} target="_blank" rel="noopener">
@@ -188,51 +165,6 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
 </Layout>
 
 <script>
-  // Visitor counter: each hop lights up as the real request reaches it.
-  const root = document.getElementById("path");
-
-  if (root) {
-    const api = root.dataset.api as string;
-    const count = document.getElementById("visitor-count") as HTMLElement;
-    const status = document.getElementById("path-status") as HTMLElement;
-    const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const setHop = (name: string, state: string) =>
-      root
-        .querySelector(`[data-hop="${name}"]`)
-        ?.setAttribute("data-state", state);
-    const pause = (ms: number) =>
-      new Promise((r) => setTimeout(r, calm ? 0 : ms));
-
-    const run = async () => {
-      setHop("host", "done");
-      await pause(350);
-      setHop("api", "active");
-      status.textContent =
-        "Waiting for Cloud Run. A cold start can take a few seconds.";
-
-      try {
-        const res = await fetch(api);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-
-        setHop("api", "done");
-        await pause(350);
-        setHop("db", "done");
-        count.textContent = Number(data.count).toLocaleString();
-        status.textContent =
-          "Your visit was counted. Cloud Run wrote it to Firestore.";
-      } catch {
-        setHop("api", "error");
-        count.textContent = "Unavailable";
-        status.textContent =
-          "The API did not respond. The rest of the site works without it.";
-      }
-    };
-
-    run();
-  }
-
   // Click-to-copy email.
   const copyButton = document.querySelector<HTMLButtonElement>("[data-copy]");
 
@@ -250,7 +182,6 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
 
 <style>
   .role-line {
-    font-family: var(--font-display);
     font-size: 1.3rem;
     color: var(--ink-soft);
     margin-bottom: 2.5rem;
@@ -260,7 +191,6 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
     display: flex;
     gap: 2rem;
     align-items: flex-start;
-    margin-bottom: 2.5rem;
   }
 
   .about > div {
@@ -273,147 +203,13 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
     width: 9rem;
     aspect-ratio: 4 / 5;
     object-fit: cover;
-    border-radius: 4px;
+    border-radius: 6px;
   }
 
   @media (max-width: 560px) {
     .about {
       flex-direction: column;
       gap: 1.25rem;
-    }
-  }
-
-  /* Live request path */
-  .path {
-    margin: 0;
-    padding: 1.5rem;
-    background: var(--paper);
-    border: 1px solid var(--rule);
-    border-radius: 6px;
-    font-family: var(--font-display);
-  }
-
-  .hops {
-    list-style: none;
-    margin: 0 0 1.5rem;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .hop {
-    position: relative;
-    padding: 1.5rem 0.75rem 0 0;
-  }
-
-  .hop::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0.85rem;
-    height: 0.85rem;
-    border-radius: 50%;
-    background: var(--paper);
-    border: 2px solid var(--rule);
-    z-index: 1;
-    transition:
-      background 0.3s ease,
-      border-color 0.3s ease;
-  }
-
-  .hop::after {
-    content: "";
-    position: absolute;
-    top: calc(0.425rem - 1px);
-    left: 0.85rem;
-    right: 0;
-    height: 2px;
-    background: var(--rule);
-    transition: background 0.3s ease;
-  }
-
-  .hop:last-child::after {
-    display: none;
-  }
-
-  .hop-name {
-    display: block;
-    font-weight: 650;
-    line-height: 1.25;
-  }
-
-  .hop-note {
-    display: block;
-    font-size: 0.875rem;
-    color: var(--ink-soft);
-  }
-
-  .hop[data-state="active"]::before {
-    border-color: var(--signal);
-    animation: pulse 1.2s ease-in-out infinite;
-  }
-
-  .hop[data-state="done"]::before {
-    background: var(--live);
-    border-color: var(--live);
-  }
-
-  .hop[data-state="done"]::after {
-    background: var(--live);
-  }
-
-  .hop[data-state="error"]::before {
-    background: var(--alert);
-    border-color: var(--alert);
-  }
-
-  @keyframes pulse {
-    50% {
-      box-shadow: 0 0 0 0.4rem rgba(36, 87, 214, 0.22);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .hop[data-state="active"]::before {
-      animation: none;
-      background: var(--signal);
-    }
-  }
-
-  .result {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.25rem 0.6rem;
-    margin: 0 0 0.75rem;
-  }
-
-  .count {
-    font-size: 2.5rem;
-    font-weight: 700;
-    line-height: 1;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .count-label {
-    color: var(--ink-soft);
-  }
-
-  figcaption {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--ink-soft);
-  }
-
-  @media (max-width: 420px) {
-    .path {
-      padding: 1.1rem 1rem;
-    }
-
-    .hop-name {
-      font-size: 0.9rem;
     }
   }
 
@@ -436,8 +232,7 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
     text-align: center;
     background: var(--paper);
     border: 1px solid var(--rule);
-    border-radius: 6px;
-    font-family: var(--font-display);
+    border-radius: 8px;
     font-size: 0.95rem;
   }
 
@@ -468,7 +263,6 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
   }
 
   .tech {
-    font-family: var(--font-display);
     font-size: 0.95rem;
     color: var(--ink-soft);
   }
@@ -484,13 +278,13 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
   .copy {
     margin-left: 0.75rem;
     padding: 0.1rem 0.7rem;
-    font-family: var(--font-display);
+    font-family: inherit;
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--ink);
     background: transparent;
     border: 1px solid var(--rule);
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
   }
 
