@@ -1,6 +1,7 @@
 ---
-import "@fontsource-variable/bricolage-grotesque";
-import "@fontsource-variable/source-serif-4";
+// import "@fontsource-variable/bricolage-grotesque";
+// import "@fontsource-variable/source-serif-4";
+import "@fontsource-variable/google-sans-flex/wght.css";
 import { profile, navItems } from "../data/site";
 
 interface Props {
@@ -12,6 +13,10 @@ const {
   title,
   description = `Portfolio of ${profile.name}, an aspiring cloud engineer building on Google Cloud.`,
 } = Astro.props;
+
+// Added brand
+// <img src="/logo.svg" alt={brand} height="28" />   (put logo.svg in site/public/)
+const brand = "chocuuuu";
 
 const onProjects = Astro.url.pathname.startsWith("/projects");
 const pageTitle = title === "Home" ? profile.name : title;
@@ -33,7 +38,7 @@ const pageTitle = title === "Home" ? profile.name : title;
 
     <div class="shell">
       <header class="rail">
-        <a class="brand" href="/">{profile.name}</a>
+        <a class="brand" href="/" aria-label={`${brand}, home`}>{brand}</a>
 
         <nav aria-label="Primary">
           <ul>
@@ -55,7 +60,51 @@ const pageTitle = title === "Home" ? profile.name : title;
           </ul>
         </nav>
 
-        <a href={profile.resume} class="resume" download>Download resume</a>
+        <div class="rail-foot">
+          <div
+            class="views"
+            id="views"
+            data-api={profile.visitorApi}
+            data-loading
+          >
+            <span class="views-label">Profile views</span>
+            <span class="views-count" id="views-count" aria-live="polite"
+              >–</span
+            >
+            <span
+              class="loader"
+              id="views-loader"
+              role="img"
+              aria-label="Loading view count"
+            >
+              <span class="stage" style="--n:0"><i></i>Hosting</span>
+              <span class="stage" style="--n:1"><i></i>Cloud Run</span>
+              <span class="stage" style="--n:2"><i></i>Firestore</span>
+            </span>
+          </div>
+
+          <a
+            href={profile.resume}
+            class="resume"
+            download
+            aria-label="Download resume"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14"></path>
+            </svg>
+            <span>Download resume</span>
+          </a>
+        </div>
       </header>
 
       <main id="main">
@@ -86,6 +135,45 @@ const pageTitle = title === "Home" ? profile.name : title;
         sections.forEach((s) => observer.observe(s));
       }
     </script>
+
+    <script>
+      // Profile views. Counted once per browser session, then reused across pages.
+      const views = document.getElementById("views");
+
+      if (views) {
+        const countEl = document.getElementById("views-count") as HTMLElement;
+        const loader = document.getElementById("views-loader");
+
+        const show = (text: string) => {
+          countEl.textContent = text;
+          loader?.remove();
+          views.removeAttribute("data-loading");
+        };
+
+        let cached: string | null = null;
+        try {
+          cached = sessionStorage.getItem("views-count");
+        } catch {}
+
+        if (cached) {
+          show(cached);
+        } else {
+          fetch(views.dataset.api as string)
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.json();
+            })
+            .then((data) => {
+              const text = Number(data.count).toLocaleString();
+              try {
+                sessionStorage.setItem("views-count", text);
+              } catch {}
+              show(text);
+            })
+            .catch(() => show("–"));
+        }
+      }
+    </script>
   </body>
 </html>
 
@@ -97,11 +185,10 @@ const pageTitle = title === "Home" ? profile.name : title;
     --ink-soft: #55626d;
     --rule: #dde3e7;
     --signal: #2457d6;
-    --live: #12714a;
-    --alert: #b3261e;
 
-    --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
-    --font-text: "Source Serif 4 Variable", Georgia, serif;
+    --font:
+      "Google Sans Flex Variable", system-ui, -apple-system, "Segoe UI", Roboto,
+      sans-serif;
     --rail-width: 15rem;
   }
 
@@ -126,9 +213,9 @@ const pageTitle = title === "Home" ? profile.name : title;
     margin: 0;
     background: var(--fog);
     color: var(--ink);
-    font-family: var(--font-text);
+    font-family: var(--font);
     font-size: 1.0625rem;
-    line-height: 1.7;
+    line-height: 1.65;
     overflow-wrap: break-word;
   }
 
@@ -140,9 +227,8 @@ const pageTitle = title === "Home" ? profile.name : title;
   h1,
   h2,
   h3 {
-    font-family: var(--font-display);
     line-height: 1.12;
-    letter-spacing: -0.015em;
+    letter-spacing: -0.02em;
     margin: 0 0 1rem;
     text-wrap: balance;
   }
@@ -186,7 +272,6 @@ const pageTitle = title === "Home" ? profile.name : title;
     border-radius: 2px;
   }
 
-  /* Sections: generous space, one hairline between them */
   .page > section {
     padding: 5rem 0;
     scroll-margin-top: 1rem;
@@ -209,7 +294,6 @@ const pageTitle = title === "Home" ? profile.name : title;
   }
 
   .rows dt {
-    font-family: var(--font-display);
     font-weight: 600;
     color: var(--ink-soft);
   }
@@ -259,6 +343,7 @@ const pageTitle = title === "Home" ? profile.name : title;
     min-height: 100vh;
   }
 
+  /* The rail shares the page background */
   .rail {
     position: sticky;
     top: 0;
@@ -266,9 +351,8 @@ const pageTitle = title === "Home" ? profile.name : title;
     display: flex;
     flex-direction: column;
     padding: 2.5rem 1.75rem 2rem;
-    background: var(--paper);
+    background: var(--fog);
     border-right: 1px solid var(--rule);
-    font-family: var(--font-display);
   }
 
   .brand {
@@ -289,17 +373,32 @@ const pageTitle = title === "Home" ? profile.name : title;
     padding: 0;
   }
 
+  /* The current section grows slightly and gets a marker that slides in */
   nav a {
+    position: relative;
     display: block;
-    padding: 0.35rem 0 0.35rem 0.9rem;
+    padding: 0.4rem 0 0.4rem 0.9rem;
     margin-left: -0.9rem;
-    border-left: 2px solid transparent;
     color: var(--ink-soft);
     text-decoration: none;
     font-weight: 500;
+    transform-origin: left center;
     transition:
-      color 0.15s ease,
-      border-color 0.15s ease;
+      transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+      color 0.2s ease;
+  }
+
+  nav a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 18%;
+    bottom: 18%;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--signal);
+    transform: scaleY(0);
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   nav a:hover {
@@ -308,26 +407,135 @@ const pageTitle = title === "Home" ? profile.name : title;
 
   nav a[aria-current] {
     color: var(--ink);
-    font-weight: 650;
-    border-left-color: var(--signal);
+    transform: scale(1.18);
+  }
+
+  nav a[aria-current]::before {
+    transform: scaleY(1);
+  }
+
+  /* Footer: views above the download button */
+  .rail-foot {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+
+  .views {
+    min-height: 3.4rem;
+  }
+
+  .views-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .views-count {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .views[data-loading] .views-count {
+    display: none;
+  }
+
+  /* Loading widget, removed from the page as soon as the count arrives */
+  .loader {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 0.45rem;
+  }
+
+  .loader::before {
+    content: "";
+    position: absolute;
+    top: 0.28rem;
+    left: 0.3rem;
+    right: 0.3rem;
+    height: 2px;
+    background: var(--rule);
+  }
+
+  .stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    color: var(--ink-soft);
+  }
+
+  .stage i {
+    position: relative;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--rule);
+    animation: beat 1.2s ease-in-out infinite;
+    animation-delay: calc(var(--n) * 0.3s);
+  }
+
+  @keyframes beat {
+    0%,
+    100% {
+      background: var(--rule);
+      transform: scale(1);
+    }
+    40% {
+      background: var(--signal);
+      transform: scale(1.4);
+    }
   }
 
   .resume {
-    margin-top: auto;
-    display: block;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     padding: 0.65rem 1rem;
     background: var(--ink);
-    color: var(--paper);
+    color: #fff;
     text-decoration: none;
     font-size: 0.95rem;
     font-weight: 600;
-    border-radius: 4px;
+    border-radius: 6px;
     transition: background 0.15s ease;
   }
 
   .resume:hover {
     background: var(--signal);
+  }
+
+  .resume svg {
+    flex: none;
+    transition: transform 0.2s ease;
+  }
+
+  .resume:hover svg {
+    transform: translateY(2px);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    nav a,
+    nav a::before {
+      transition: none;
+    }
+
+    .stage i {
+      animation: none;
+    }
+
+    .resume:hover svg {
+      transform: none;
+    }
   }
 
   /* Content is centered in the space beside the rail */
@@ -342,7 +550,7 @@ const pageTitle = title === "Home" ? profile.name : title;
     margin-inline: auto;
   }
 
-  /* Narrow windows: rail becomes a sticky top bar */
+  /* Narrow windows: the rail becomes a sticky top bar */
   @media (max-width: 900px) {
     .shell {
       display: block;
@@ -365,9 +573,36 @@ const pageTitle = title === "Home" ? profile.name : title;
       font-size: 1.1rem;
     }
 
-    .resume {
+    .rail-foot {
       margin-top: 0;
-      padding: 0.35rem 0.8rem;
+      flex-direction: row;
+      align-items: center;
+      gap: 0.9rem;
+    }
+
+    .views {
+      min-height: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 0.35rem;
+    }
+
+    .views-label {
+      font-size: 0.8rem;
+    }
+
+    .views-count,
+    .views[data-loading] .views-count {
+      display: inline;
+      font-size: 1rem;
+    }
+
+    .loader {
+      display: none;
+    }
+
+    .resume {
+      padding: 0.4rem 0.8rem;
       font-size: 0.85rem;
     }
 
@@ -381,19 +616,54 @@ const pageTitle = title === "Home" ? profile.name : title;
 
     nav ul {
       display: flex;
-      gap: 1.25rem;
+      gap: 1.5rem;
+      padding-block: 0.2rem;
     }
 
     nav a {
       margin-left: 0;
       padding: 0.3rem 0;
-      border-left: 0;
-      border-bottom: 2px solid transparent;
       white-space: nowrap;
+      transform-origin: center;
+    }
+
+    nav a::before {
+      top: auto;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: auto;
+      height: 2px;
+      transform: scaleX(0);
     }
 
     nav a[aria-current] {
-      border-bottom-color: var(--signal);
+      transform: scale(1.12);
+    }
+
+    nav a[aria-current]::before {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .views-label {
+      display: none;
+    }
+
+    .views-count::after {
+      content: " views";
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: var(--ink-soft);
+    }
+
+    .resume span {
+      display: none;
+    }
+
+    .resume {
+      padding: 0.45rem 0.6rem;
     }
   }
 </style>
