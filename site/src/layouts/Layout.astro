@@ -31,6 +31,15 @@ const pageTitle = title === "Home" ? profile.name : title;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
+    <script is:inline>
+      // Scroll reveal is opt-in: no JS or reduced motion means everything is simply visible.
+      if (
+        "IntersectionObserver" in window &&
+        !matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        document.documentElement.classList.add("js");
+      }
+    </script>
     <title>{pageTitle} | Aspiring Cloud Engineer</title>
   </head>
   <body>
@@ -115,7 +124,7 @@ const pageTitle = title === "Home" ? profile.name : title;
     </div>
 
     <script is:inline define:vars={{ onProjects }}>
-      // Highlight the section in view
+      // Highlight the section in view (home page only).
       if (!onProjects && "IntersectionObserver" in window) {
         const links = document.querySelectorAll("nav a[data-id]");
         const sections = document.querySelectorAll(".page > section[id]");
@@ -136,6 +145,28 @@ const pageTitle = title === "Home" ? profile.name : title;
       }
     </script>
 
+    <script is:inline>
+      // Reveal each block as it scrolls into view, with a light stagger inside a section.
+      if (document.documentElement.classList.contains("js")) {
+        const revealer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              entry.target.classList.add("in");
+              revealer.unobserve(entry.target);
+            }
+          },
+          { threshold: 0.08, rootMargin: "0px 0px -6% 0px" },
+        );
+        document.querySelectorAll(".page > section").forEach((section) => {
+          Array.from(section.children).forEach((child, i) => {
+            child.style.setProperty("--d", Math.min(i * 70, 280) + "ms");
+            revealer.observe(child);
+          });
+        });
+      }
+    </script>
+
     <script>
       // Profile views. Counted once per browser session, then reused across pages.
       const views = document.getElementById("views");
@@ -144,10 +175,22 @@ const pageTitle = title === "Home" ? profile.name : title;
         const countEl = document.getElementById("views-count") as HTMLElement;
         const loader = document.getElementById("views-loader");
 
+        const MIN_LOADER_MS = 1800;
+        const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const started = performance.now();
+
         const show = (text: string) => {
           countEl.textContent = text;
           loader?.remove();
           views.removeAttribute("data-loading");
+        };
+
+        // Keep the loading widget up for at least 1.8s, even if the API answers sooner.
+        const showAfterMinimum = (text: string) => {
+          const remaining = calm
+            ? 0
+            : Math.max(0, MIN_LOADER_MS - (performance.now() - started));
+          setTimeout(() => show(text), remaining);
         };
 
         let cached: string | null = null;
@@ -168,9 +211,9 @@ const pageTitle = title === "Home" ? profile.name : title;
               try {
                 sessionStorage.setItem("views-count", text);
               } catch {}
-              show(text);
+              showAfterMinimum(text);
             })
-            .catch(() => show("–"));
+            .catch(() => showAfterMinimum("–"));
         }
       }
     </script>
@@ -283,6 +326,21 @@ const pageTitle = title === "Home" ? profile.name : title;
 
   .page > section + section {
     border-top: 1px solid var(--rule);
+  }
+
+  /* Scroll reveal: only active when the head script added .js */
+  .js .page > section > * {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.6s ease,
+      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition-delay: var(--d, 0ms);
+  }
+
+  .js .page > section > *.in {
+    opacity: 1;
+    transform: none;
   }
 
   /* Label / value rows used for skills, contact and project details */
@@ -479,8 +537,8 @@ const pageTitle = title === "Home" ? profile.name : title;
     height: 0.6rem;
     border-radius: 50%;
     background: var(--rule);
-    animation: beat 1.2s ease-in-out infinite;
-    animation-delay: calc(var(--n) * 0.3s);
+    animation: beat 1.8s ease-in-out infinite;
+    animation-delay: calc(var(--n) * 0.35s);
   }
 
   @keyframes beat {
