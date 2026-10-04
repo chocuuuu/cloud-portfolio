@@ -45,10 +45,9 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
               <li class="cert">
                 {c.image && (
                   <img
+                    class="cert-img"
                     src={c.image}
-                    alt=""
-                    width="72"
-                    height="72"
+                    alt={`${c.name} badge`}
                     loading="lazy"
                   />
                 )}
@@ -236,8 +235,13 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
     font-size: 0.95rem;
   }
 
-  .cert img {
-    margin-bottom: 0.6rem;
+  /* Badges, icons or logos: any shape, shown whole */
+  .cert-img {
+    height: 4.5rem;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    margin-bottom: 0.7rem;
   }
 
   .cert-name {

@@ -26,6 +26,7 @@ export const certifications: Certification[] = [
     name: "ServiceNow Certified System Administrator",
     code: "CST-001",
     issuer: "ServiceNow",
+    image: "/assets/csa.png",
     url: "https://www.credly.com/earner/earned/badge/3ccf51ff-e142-419b-869e-c793e9c0bfdd",
   },
   {
