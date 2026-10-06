@@ -1,35 +1,49 @@
 const express = require('express');
 const cors = require('cors');
+const { rateLimit } = require('express-rate-limit');
 const { Firestore, FieldValue } = require('@google-cloud/firestore');
 
-const app = express();
-app.use(cors()); 
-app.use(express.json());
+function createApp(firestore = new Firestore()) {
+    const app = express();
+    app.set('trust proxy', 1);
+    app.use(cors());
+    app.use(express.json());
 
-// Initialize Firestore
-const firestore = new Firestore();
+    const visitorCountLimiter = rateLimit({
+        windowMs: 60_000,
+        limit: 20,
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many requests' }
+    });
 
-app.get('/api/visitor-count', async (req, res) => {
-    try {
-        const docRef = firestore.collection('visitors').doc('count');
+    app.get('/api/visitor-count', visitorCountLimiter, async (req, res) => {
+        try {
+            const docRef = firestore.collection('visitors').doc('count');
 
-        // Increment the visitor count atomically
-        await docRef.set({
-            count: FieldValue.increment(1)
-        }, { merge: true });
+            await docRef.set({
+                count: FieldValue.increment(1)
+            }, { merge: true });
 
-        // Fetch updated document to return new count
-        const doc = await docRef.get();
-        const currentCount = doc.data().count;
+            const doc = await docRef.get();
+            const currentCount = doc.data().count;
 
-        res.status(200).json({ count: currentCount });
-    } catch (error) {
-        console.error('Error updating visitor count:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
+            res.status(200).json({ count: currentCount });
+        } catch (error) {
+            console.error('Error updating visitor count:', error);
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-});
+    return app;
+}
+
+if (require.main === module) {
+    const app = createApp();
+    const port = process.env.PORT || 8080;
+    app.listen(port, () => {
+        console.log(`Server listening on port ${port}`);
+    });
+}
+
+module.exports = { createApp };

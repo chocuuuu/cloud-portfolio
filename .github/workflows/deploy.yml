@@ -77,5 +77,7 @@ jobs:
           gcloud run deploy visitor-api \
             --image us-central1-docker.pkg.dev/cloud-portfolio-509107/cloud-portfolio-repo/visitor-api:latest \
             --region us-central1 \
+            --max 3 \
+            --concurrency 20 \
             --allow-unauthenticated \
             --project cloud-portfolio-509107
