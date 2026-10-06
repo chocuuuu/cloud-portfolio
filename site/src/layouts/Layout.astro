@@ -73,18 +73,9 @@ const commands = [
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
-    <script is:inline>
-      // Scroll reveal is opt-in: no JS or reduced motion means everything is simply visible.
-      if (
-        "IntersectionObserver" in window &&
-        !matchMedia("(prefers-reduced-motion: reduce)").matches
-      ) {
-        document.documentElement.classList.add("js");
-      }
-    </script>
     <title>{pageTitle} | Aspiring Cloud Engineer</title>
   </head>
-  <body>
+  <body data-page={onProjects ? "projects" : "home"}>
     <a class="skip" href="#main">Skip to content</a>
 
     <div class="shell">
@@ -208,10 +199,12 @@ const commands = [
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script is:inline define:vars={{ onProjects }}>
-      // Highlight the section in view
+    <script>
+      // Highlight the section in view (home page only).
+      const onProjects = document.body.dataset.page === "projects";
+
       if (!onProjects && "IntersectionObserver" in window) {
-        const links = document.querySelectorAll("nav a[data-id]");
+        const links = document.querySelectorAll<HTMLElement>("nav a[data-id]");
         const sections = document.querySelectorAll(".page > section[id]");
         const observer = new IntersectionObserver(
           (entries) => {
@@ -226,13 +219,13 @@ const commands = [
           },
           { rootMargin: "-30% 0px -60% 0px" },
         );
-        sections.forEach((s) => observer.observe(s));
+        sections.forEach((section) => observer.observe(section));
       }
     </script>
 
-    <script is:inline>
+    <script>
       // Reveal each block as it scrolls into view, with a light stagger inside a section.
-      if (document.documentElement.classList.contains("js")) {
+      if ("IntersectionObserver" in window) {
         const revealer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {
@@ -243,9 +236,13 @@ const commands = [
           },
           { threshold: 0.08, rootMargin: "0px 0px -6% 0px" },
         );
+
         document.querySelectorAll(".page > section").forEach((section) => {
           Array.from(section.children).forEach((child, i) => {
-            child.style.setProperty("--d", Math.min(i * 70, 280) + "ms");
+            (child as HTMLElement).style.setProperty(
+              "--d",
+              `${Math.min(i * 70, 280)}ms`,
+            );
             revealer.observe(child);
           });
         });
@@ -784,19 +781,21 @@ const commands = [
     }
   }
 
-  /* Scroll reveal: only active when the head script added .js */
-  .js .page > section > * {
-    opacity: 0;
-    transform: translateY(14px);
-    transition:
-      opacity 0.6s ease,
-      transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-    transition-delay: var(--d, 0ms);
-  }
+  /* Scroll reveal: applies only when scripting is on and the visitor allows motion */
+  @media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+    .page > section > * {
+      opacity: 0;
+      transform: translateY(14px);
+      transition:
+        opacity 0.6s ease,
+        transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition-delay: var(--d, 0ms);
+    }
 
-  .js .page > section > *.in {
-    opacity: 1;
-    transform: none;
+    .page > section > *.in {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   /* Label / value rows used for skills, contact and project details */
