@@ -24,29 +24,32 @@ export type Certification = {
 export const certifications: Certification[] = [
   {
     name: "ServiceNow Certified System Administrator",
-    code: "CST-001",
     issuer: "ServiceNow",
-    image: "/assets/csa.png",
+    image: "/public/certs/csa.png",
     url: "https://www.credly.com/earner/earned/badge/3ccf51ff-e142-419b-869e-c793e9c0bfdd",
   },
   {
     name: "2025 SAS Curiosity Cup Winner",
     issuer: "SAS",  
+    image: "/public/certs/sas.png",
     url: "https://www.credly.com/earner/earned/badge/e7479fd7-5b6c-48d7-8cd1-e83aaa9cbf25",
   },
   {
     name: "Implement Load Balancing on Compute Engine Skill Badge",
     issuer: "Google",
+    image: "/public/certs/load.png",
     url: "https://www.credly.com/earner/earned/badge/b9625901-3679-4f5f-9334-a4c118f913b2",
   },
   {
     name: "Set Up an App Dev Environment on Google Cloud Skill Badge",
     issuer: "Google",
+    image: "/public/certs/appdev.png",
     url: "https://www.credly.com/earner/earned/badge/ba2a510b-4836-4fad-b05e-fc60437c0c8c"
   },
   {
     name: "Cloud Computing Fundamentals",
     issuer: "IBM SkillsBuild",
+    image: "/public/certs/cloud.png",
     url: "https://www.credly.com/earner/earned/badge/bf1d3129-aaa3-4c41-819c-f469360c212d"
   },
 ];
