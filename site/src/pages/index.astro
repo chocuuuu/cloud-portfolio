@@ -10,6 +10,12 @@ import {
 } from "../data/site";
 
 const showCerts = certifications.length > 0 || inProgress.length > 0;
+
+// Badge images live in certs 
+const imageSrc = (path: string) => {
+  if (/^(https?:)?\/\//.test(path)) return path;
+  return "/" + path.replace(/^\/+/, "").replace(/^public\//, "");
+};
 ---
 
 <Layout title="Home">
@@ -46,7 +52,7 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
                 {c.image && (
                   <img
                     class="cert-img"
-                    src={c.image}
+                    src={imageSrc(c.image)}
                     alt={`${c.name} badge`}
                     loading="lazy"
                   />
@@ -143,7 +149,8 @@ const showCerts = certifications.length > 0 || inProgress.length > 0;
       <dt>LinkedIn</dt>
       <dd>
         <a href={profile.linkedin} target="_blank" rel="noopener"
-          >{profile.linkedin.replace("https://www.", "")}</a>
+          >{profile.linkedin.replace("https://www.", "")}</a
+        >
       </dd>
       {
         profile.github && (
