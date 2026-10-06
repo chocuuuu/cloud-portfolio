@@ -2,3 +2,9 @@
 **/.terraform/
 *.tfstate
 *.tfstate.*
+
+# Firebase
+.firebase/
+
+# Astro build output
+site/dist/
