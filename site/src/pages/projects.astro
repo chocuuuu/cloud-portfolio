@@ -229,6 +229,7 @@ const auditHeaders = [
             statusCell.textContent = "Present";
             valueCell.textContent =
               value.length > 70 ? `${value.slice(0, 67)}…` : value;
+            valueCell.title = value;
           } else {
             row.dataset.state = "missing";
             statusCell.textContent = "Missing";
