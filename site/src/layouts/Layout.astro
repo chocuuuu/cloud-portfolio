@@ -3,6 +3,7 @@
 // import "@fontsource-variable/source-serif-4";
 import "@fontsource-variable/google-sans-flex/wght.css";
 import { profile, navItems } from "../data/site";
+import SiteInfo from "../components/SiteInfo.astro";
 
 interface Props {
   title: string;
@@ -14,12 +15,53 @@ const {
   description = `Portfolio of ${profile.name}, an aspiring cloud engineer building on Google Cloud.`,
 } = Astro.props;
 
-// Added brand
-// <img src="/logo.svg" alt={brand} height="28" />   (put logo.svg in site/public/)
+// Added brand for SEO
 const brand = "chocuuuu";
 
 const onProjects = Astro.url.pathname.startsWith("/projects");
 const pageTitle = title === "Home" ? profile.name : title;
+
+// Commands for the quick-jump palette
+const commands = [
+  ...navItems.map((item) => ({
+    label: `Go to ${item.label}`,
+    group: "Navigate",
+    href: `/#${item.id}`,
+  })),
+  {
+    label: "See the architecture",
+    group: "Navigate",
+    href: "/projects#architecture",
+  },
+  {
+    label: "Run the security self-audit",
+    group: "Navigate",
+    href: "/projects#security",
+  },
+  { label: "Copy email address", group: "Actions", copy: profile.email },
+  {
+    label: "Download resume",
+    group: "Actions",
+    href: profile.resume,
+    download: true,
+  },
+  {
+    label: "Open LinkedIn",
+    group: "Links",
+    href: profile.linkedin,
+    external: true,
+  },
+  ...(profile.github
+    ? [
+        {
+          label: "Open GitHub",
+          group: "Links",
+          href: profile.github,
+          external: true,
+        },
+      ]
+    : []),
+];
 ---
 
 <!doctype html>
@@ -32,7 +74,7 @@ const pageTitle = title === "Home" ? profile.name : title;
     <link rel="icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
     <script is:inline>
-      // Scroll reveal
+      // Scroll reveal is opt-in: no JS or reduced motion means everything is simply visible.
       if (
         "IntersectionObserver" in window &&
         !matchMedia("(prefers-reduced-motion: reduce)").matches
@@ -69,6 +111,16 @@ const pageTitle = title === "Home" ? profile.name : title;
           </ul>
         </nav>
 
+        <button
+          type="button"
+          class="cmdk"
+          data-open-palette
+          aria-label="Open quick jump"
+        >
+          <span>Quick jump</span>
+          <kbd data-kbd>Ctrl K</kbd>
+        </button>
+
         <div class="rail-foot">
           <div
             class="views"
@@ -80,6 +132,12 @@ const pageTitle = title === "Home" ? profile.name : title;
             <span class="views-count" id="views-count" aria-live="polite"
               >–</span
             >
+            <span
+              class="badge views-badge"
+              title="Counted in Firestore through the Cloud Run API"
+            >
+              <i class="dot live" aria-hidden="true"></i>Live · Firestore
+            </span>
             <span
               class="loader"
               id="views-loader"
@@ -119,9 +177,36 @@ const pageTitle = title === "Home" ? profile.name : title;
       <main id="main">
         <div class="page">
           <slot />
+          <SiteInfo />
         </div>
       </main>
     </div>
+
+    <dialog
+      class="palette"
+      id="palette"
+      aria-label="Quick jump"
+      data-commands={JSON.stringify(commands)}
+    >
+      <div class="palette-box">
+        <input
+          id="palette-input"
+          type="text"
+          role="combobox"
+          aria-expanded="true"
+          aria-controls="palette-list"
+          aria-autocomplete="list"
+          placeholder="Jump to a section or run a command"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <ul id="palette-list" role="listbox" aria-label="Commands"></ul>
+        <p class="palette-hint">
+          <kbd>↑</kbd><kbd>↓</kbd> move <kbd>Enter</kbd> run <kbd>Esc</kbd> close
+        </p>
+      </div>
+    </dialog>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script is:inline define:vars={{ onProjects }}>
       // Highlight the section in view
@@ -168,7 +253,28 @@ const pageTitle = title === "Home" ? profile.name : title;
     </script>
 
     <script>
-      // Profile views. Counted once per browser session, then reused across pages.
+      // Profile views and live service status. One request per browser session, reused across pages.
+      type Status = { ok: boolean; ms: number };
+
+      const paintStatus = (status: Status) => {
+        document
+          .querySelectorAll<HTMLElement>("[data-service]")
+          .forEach((el) => {
+            const text = el.querySelector("[data-service-text]");
+            el.dataset.state = status.ok ? "up" : "down";
+            if (!text) return;
+            if (el.dataset.service === "cloud-run") {
+              text.textContent = status.ok
+                ? `Responded in ${status.ms.toLocaleString()} ms`
+                : "Not responding";
+            } else {
+              text.textContent = status.ok
+                ? "Counter write succeeded"
+                : "Unknown, the API is down";
+            }
+          });
+      };
+
       const views = document.getElementById("views");
 
       if (views) {
@@ -193,14 +299,19 @@ const pageTitle = title === "Home" ? profile.name : title;
           setTimeout(() => show(text), remaining);
         };
 
-        let cached: string | null = null;
+        let cachedCount: string | null = null;
+        let cachedStatus: Status | null = null;
         try {
-          cached = sessionStorage.getItem("views-count");
+          cachedCount = sessionStorage.getItem("views-count");
+          const raw = sessionStorage.getItem("site-status");
+          cachedStatus = raw ? (JSON.parse(raw) as Status) : null;
         } catch {}
 
-        if (cached) {
-          show(cached);
+        if (cachedCount) {
+          show(cachedCount);
+          if (cachedStatus) paintStatus(cachedStatus);
         } else {
+          const t0 = performance.now();
           fetch(views.dataset.api as string)
             .then((res) => {
               if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -208,13 +319,183 @@ const pageTitle = title === "Home" ? profile.name : title;
             })
             .then((data) => {
               const text = Number(data.count).toLocaleString();
+              const status: Status = {
+                ok: true,
+                ms: Math.round(performance.now() - t0),
+              };
               try {
                 sessionStorage.setItem("views-count", text);
+                sessionStorage.setItem("site-status", JSON.stringify(status));
               } catch {}
+              paintStatus(status);
               showAfterMinimum(text);
             })
-            .catch(() => showAfterMinimum("–"));
+            .catch(() => {
+              paintStatus({ ok: false, ms: 0 });
+              showAfterMinimum("–");
+            });
         }
+      }
+    </script>
+
+    <script>
+      // Quick-jump palette (Ctrl/Cmd + K).
+      type Cmd = {
+        label: string;
+        group: string;
+        href?: string;
+        copy?: string;
+        download?: boolean;
+        external?: boolean;
+      };
+
+      const dialog = document.getElementById(
+        "palette",
+      ) as HTMLDialogElement | null;
+      const toast = document.getElementById("toast");
+
+      const notify = (message: string) => {
+        if (!toast) return;
+        toast.textContent = message;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 2000);
+      };
+
+      if (dialog) {
+        const commands: Cmd[] = JSON.parse(dialog.dataset.commands ?? "[]");
+        const input = document.getElementById(
+          "palette-input",
+        ) as HTMLInputElement;
+        const list = document.getElementById(
+          "palette-list",
+        ) as HTMLUListElement;
+        let results: Cmd[] = commands;
+        let active = 0;
+
+        const paintActive = () => {
+          list
+            .querySelectorAll<HTMLElement>('li[role="option"]')
+            .forEach((li, i) => {
+              li.setAttribute("aria-selected", String(i === active));
+              if (i === active) {
+                li.scrollIntoView({ block: "nearest" });
+                input.setAttribute("aria-activedescendant", li.id);
+              }
+            });
+        };
+
+        const run = async (cmd: Cmd) => {
+          dialog.close();
+          if (cmd.copy) {
+            try {
+              await navigator.clipboard.writeText(cmd.copy);
+              notify("Copied to clipboard");
+            } catch {
+              notify("Copy failed");
+            }
+            return;
+          }
+          if (!cmd.href) return;
+          if (cmd.external) {
+            window.open(cmd.href, "_blank", "noopener");
+          } else if (cmd.download) {
+            const a = document.createElement("a");
+            a.href = cmd.href;
+            a.download = "";
+            document.body.append(a);
+            a.click();
+            a.remove();
+          } else {
+            location.href = cmd.href;
+          }
+        };
+
+        const render = () => {
+          list.replaceChildren();
+          if (results.length === 0) {
+            const empty = document.createElement("li");
+            empty.className = "empty";
+            empty.textContent = "No matching commands";
+            list.append(empty);
+            return;
+          }
+          results.forEach((cmd, i) => {
+            const li = document.createElement("li");
+            li.id = `cmd-${i}`;
+            li.setAttribute("role", "option");
+            const label = document.createElement("span");
+            label.textContent = cmd.label;
+            const group = document.createElement("small");
+            group.textContent = cmd.group;
+            li.append(label, group);
+            li.addEventListener("mousemove", () => {
+              if (active !== i) {
+                active = i;
+                paintActive();
+              }
+            });
+            li.addEventListener("click", () => run(cmd));
+            list.append(li);
+          });
+          paintActive();
+        };
+
+        const filter = () => {
+          const words = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+          results = commands.filter((c) =>
+            words.every((w) =>
+              `${c.label} ${c.group}`.toLowerCase().includes(w),
+            ),
+          );
+          active = 0;
+          render();
+        };
+
+        const open = () => {
+          if (dialog.open) return;
+          input.value = "";
+          filter();
+          dialog.showModal();
+          input.focus();
+        };
+
+        input.addEventListener("input", filter);
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+            e.preventDefault();
+            if (!results.length) return;
+            active =
+              (active + (e.key === "ArrowDown" ? 1 : -1) + results.length) %
+              results.length;
+            paintActive();
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            const cmd = results[active];
+            if (cmd) run(cmd);
+          }
+        });
+
+        // Clicking the dimmed backdrop closes the palette.
+        dialog.addEventListener("click", (e) => {
+          if (e.target === dialog) dialog.close();
+        });
+
+        document.addEventListener("keydown", (e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            if (dialog.open) dialog.close();
+            else open();
+          }
+        });
+
+        document
+          .querySelectorAll("[data-open-palette]")
+          .forEach((b) => b.addEventListener("click", open));
+
+        const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
+        document.querySelectorAll("[data-kbd]").forEach((el) => {
+          el.textContent = isMac ? "⌘K" : "Ctrl K";
+        });
       }
     </script>
   </body>
@@ -228,6 +509,8 @@ const pageTitle = title === "Home" ? profile.name : title;
     --ink-soft: #55626d;
     --rule: #dde3e7;
     --signal: #2457d6;
+    --live: #12714a;
+    --alert: #b3261e;
 
     --font:
       "Google Sans Flex Variable", system-ui, -apple-system, "Segoe UI", Roboto,
@@ -326,6 +609,179 @@ const pageTitle = title === "Home" ? profile.name : title;
 
   .page > section + section {
     border-top: 1px solid var(--rule);
+  }
+
+  /* Live badge: a small pill with a pulsing dot and the data source */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.05rem 0.6rem;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  .dot {
+    flex: none;
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--rule);
+  }
+
+  .dot.live {
+    background: var(--live);
+    animation: livepulse 2.4s ease-out infinite;
+  }
+
+  @keyframes livepulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(18, 113, 74, 0.45);
+    }
+    70%,
+    100% {
+      box-shadow: 0 0 0 0.4rem rgba(18, 113, 74, 0);
+    }
+  }
+
+  kbd {
+    font: inherit;
+    font-size: 0.75rem;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--fog);
+    color: var(--ink-soft);
+  }
+
+  /* Quick-jump palette (its list items are created by script, so these rules are global) */
+  .palette {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    width: min(36rem, calc(100vw - 2rem));
+    margin: 14vh auto auto;
+    overflow: visible;
+    color: var(--ink);
+  }
+
+  .palette::backdrop {
+    background: rgba(22, 33, 43, 0.35);
+    backdrop-filter: blur(3px);
+  }
+
+  .palette[open] {
+    animation: palette-in 0.18s ease-out;
+  }
+
+  @keyframes palette-in {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+    }
+  }
+
+  .palette-box {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(22, 33, 43, 0.22);
+    overflow: hidden;
+    font-family: var(--font);
+  }
+
+  .palette input {
+    width: 100%;
+    padding: 1rem 1.1rem;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 1.05rem;
+    outline: none;
+  }
+
+  .palette ul {
+    list-style: none;
+    margin: 0;
+    padding: 0.4rem;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+
+  .palette li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+
+  .palette li[aria-selected="true"] {
+    background: var(--fog);
+  }
+
+  .palette li small {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+  }
+
+  .palette li.empty {
+    color: var(--ink-soft);
+    cursor: default;
+  }
+
+  .palette-hint {
+    margin: 0;
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  body:has(dialog[open]) {
+    overflow: hidden;
+  }
+
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 1.5rem;
+    transform: translate(-50%, 0.5rem);
+    padding: 0.55rem 1rem;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+    z-index: 30;
+  }
+
+  .toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot.live,
+    .palette[open] {
+      animation: none;
+    }
+
+    .toast {
+      transition: none;
+    }
   }
 
   /* Scroll reveal: only active when the head script added .js */
@@ -596,6 +1052,37 @@ const pageTitle = title === "Home" ? profile.name : title;
     }
   }
 
+  .cmdk {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.5rem;
+    padding: 0.5rem 0.75rem;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+    background: transparent;
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .cmdk:hover {
+    color: var(--ink);
+    border-color: var(--ink-soft);
+  }
+
+  .views-badge {
+    margin-top: 0.4rem;
+  }
+
+  .views[data-loading] .views-badge {
+    display: none;
+  }
+
   /* Content is centered in the space beside the rail */
   main {
     min-width: 0;
@@ -655,7 +1142,9 @@ const pageTitle = title === "Home" ? profile.name : title;
       font-size: 1rem;
     }
 
-    .loader {
+    .loader,
+    .cmdk,
+    .views-badge {
       display: none;
     }
 
