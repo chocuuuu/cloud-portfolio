@@ -68,7 +68,7 @@ const commands = [
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
@@ -866,6 +866,11 @@ const commands = [
     padding: 2.5rem 1.75rem 2rem;
     background: var(--fog);
     border-right: 1px solid var(--rule);
+  }
+
+  .rail,
+  header {
+    padding-top: max(1rem, env(safe-area-inset-top));
   }
 
   .brand {
