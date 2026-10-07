@@ -83,32 +83,35 @@ const auditHeaders = [
             <ol class="chain">
               {nodes
                 .filter((n) => n.lane === lane)
-                .map((n) => (
-                  <li class="node-item">
-                    <button type="button" class="node" aria-expanded="false">
+                .map((n, i) => (
+                  <li>
+                    <button
+                      type="button"
+                      class="node"
+                      data-role={n.role}
+                      data-why={n.why}
+                      data-adr={n.adr ?? ""}
+                      aria-pressed={n.id === first.id ? "true" : "false"}
+                      aria-controls="arch-detail"
+                    >
                       {n.name}
                     </button>
-                    <div class="node-dropdown" hidden>
-                      <p data-d-role>
-                        <strong>Role:</strong> {n.role}
-                      </p>
-                      <p>
-                        <strong>Why:</strong> <span data-d-why>{n.why}</span>
-                      </p>
-                      {n.adr && (
-                        <p class="adr-link">
-                          <a href={n.adr} target="_blank" rel="noopener">
-                            Read the decision record
-                          </a>
-                        </p>
-                      )}
-                    </div>
                   </li>
                 ))}
             </ol>
           </div>
         ))
       }
+
+      <div class="detail" id="arch-detail" aria-live="polite">
+        <h3 data-d-name>{first.name}</h3>
+        <p data-d-role>{first.role}</p>
+        <p><strong>Why: </strong><span data-d-why>{first.why}</span></p>
+        <p data-d-adr hidden>
+          <a href="#" target="_blank" rel="noopener"
+            >Read the decision record</a>
+        </p>
+      </div>
     </div>
   </section>
 
@@ -162,31 +165,37 @@ const auditHeaders = [
 </Layout>
 
 <script>
-  // Interactive architecture diagram (Accordion).
+  // Interactive architecture diagram.
   const arch = document.getElementById("arch");
 
   if (arch) {
-    const buttons = Array.from(
-      arch.querySelectorAll<HTMLButtonElement>(".node"),
-    );
+    const nodes = Array.from(arch.querySelectorAll<HTMLButtonElement>(".node"));
+    const nameEl = arch.querySelector("[data-d-name]") as HTMLElement;
+    const roleEl = arch.querySelector("[data-d-role]") as HTMLElement;
+    const whyEl = arch.querySelector("[data-d-why]") as HTMLElement;
+    const adrWrap = arch.querySelector("[data-d-adr]") as HTMLElement;
+    const adrLink = adrWrap.querySelector("a") as HTMLAnchorElement;
 
-    buttons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const dropdown = button.nextElementSibling as HTMLElement | null;
-        const isExpanded = button.getAttribute("aria-expanded") === "true";
+    const select = (button: HTMLButtonElement) => {
+      nodes.forEach((n) =>
+        n.setAttribute("aria-pressed", String(n === button)),
+      );
+      nameEl.textContent = button.textContent?.trim() ?? "";
+      roleEl.textContent = button.dataset.role ?? "";
+      whyEl.textContent = button.dataset.why ?? "";
+      const adr = button.dataset.adr;
+      if (adr) {
+        adrLink.href = adr;
+        adrWrap.hidden = false;
+      } else {
+        adrWrap.hidden = true;
+      }
+    };
 
-        // Close all other accordions
-        arch.querySelectorAll<HTMLElement>(".node-dropdown").forEach((d) => {
-          d.hidden = true;
-        });
-        buttons.forEach((b) => b.setAttribute("aria-expanded", "false"));
-
-        // Open the clicked accordion if it wasn't already open
-        if (!isExpanded && dropdown) {
-          dropdown.hidden = false;
-          button.setAttribute("aria-expanded", "true");
-        }
-      });
+    nodes.forEach((node) => {
+      node.addEventListener("click", () => select(node));
+      node.addEventListener("focus", () => select(node));
+      node.addEventListener("mouseenter", () => select(node));
     });
   }
 
