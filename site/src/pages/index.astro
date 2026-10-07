@@ -260,19 +260,21 @@ const imageSrc = (path: string) => {
     font-size: 0.95rem;
   }
 
-  /* Fixed 5rem x 5rem box for every badge, icon or logo. Images are shown whole, never cropped. */
   .cert-media {
-    display: grid;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     place-items: center;
     flex: none;
-    width: 5rem;
-    height: 5rem;
-    margin-bottom: 0.8rem;
+    width: 100%;
+    height: 5.5rem;
+    margin-bottom: 1rem;
     color: var(--rule);
   }
 
   .cert-img {
-    width: 100%;
+    max-width: 100%;
+    width: auto;
     height: 100%;
     object-fit: contain;
   }
