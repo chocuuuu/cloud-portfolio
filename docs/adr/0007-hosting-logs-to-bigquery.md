@@ -1,8 +1,7 @@
-<!-- Draft: this one is still a proposal. Update the status to Accepted once the pipeline works. -->
 # 0007: Analytics from Hosting logs in BigQuery
 
 Status: Proposed
-Recorded: 2026-10-06
+Recorded: 2026-10-07
 
 ## Context
 

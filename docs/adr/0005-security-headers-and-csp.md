@@ -1,7 +1,7 @@
 # 0005: Security headers and a strict CSP
 
 Status: Accepted
-Recorded: 2026-10-02
+Recorded: 2026-10-07
 
 ## Context
 

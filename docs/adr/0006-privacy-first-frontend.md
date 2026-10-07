@@ -1,6 +1,6 @@
 # 0006: Privacy-first frontend: no cookies, no third-party requests
 
-Status: Accepted
+Status: Proposed
 Recorded: 2026-10-06
 
 ## Context

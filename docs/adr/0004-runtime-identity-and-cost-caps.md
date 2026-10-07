@@ -1,8 +1,7 @@
-<!-- Draft: check that every number below matches what you actually deployed, then delete this line. -->
 # 0004: Least-privilege runtime identity and cost caps
 
 Status: Accepted
-Recorded: 2026-10-06
+Recorded: 2026-10-02
 
 ## Context
 
