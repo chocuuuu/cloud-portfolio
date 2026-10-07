@@ -43,6 +43,18 @@ jobs:
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
+      
+      - name: Install Frontend Dependencies
+        working-directory: ./site
+        run: npm install
+      
+      - name: Build Astro Site
+        working-directory: ./site
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        working-directory: ./site
+        run: npx firebase-tools deploy --only hosting --project cloud-portfolio-509107
 
   deploy-api:
     name: Build & Deploy API
