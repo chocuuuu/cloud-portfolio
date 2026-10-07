@@ -68,7 +68,10 @@ const commands = [
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
@@ -217,7 +220,7 @@ const commands = [
               });
             }
           },
-          { rootMargin: "-30% 0px -60% 0px" },
+          { rootMargin: "-5% 0px -60% 0px" },
         );
         sections.forEach((section) => observer.observe(section));
       }
@@ -1021,6 +1024,7 @@ const commands = [
     font-weight: 600;
     border-radius: 6px;
     transition: background 0.15s ease;
+    white-space: nowrap;
   }
 
   .resume:hover {
