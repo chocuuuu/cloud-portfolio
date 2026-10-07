@@ -202,27 +202,42 @@ const commands = [
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script>
-      // Highlight the section in view (home page only).
-      const onProjects = document.body.dataset.page === "projects";
-
+    <script is:inline define:vars={{ onProjects }}>
+      // Highlight the section in view
       if (!onProjects && "IntersectionObserver" in window) {
-        const links = document.querySelectorAll<HTMLElement>("nav a[data-id]");
+        const links = document.querySelectorAll("nav a[data-id]");
         const sections = document.querySelectorAll(".page > section[id]");
+        const visibleSections = new Set();
+
         const observer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {
-              if (!entry.isIntersecting) continue;
+              if (entry.isIntersecting) {
+                visibleSections.add(entry.target.id);
+              } else {
+                visibleSections.delete(entry.target.id);
+              }
+            }
+
+            // Find the first section in DOM order that is currently visible
+            const activeId = Array.from(sections).find((s) =>
+              visibleSections.has(s.id),
+            )?.id;
+
+            if (activeId) {
               links.forEach((link) => {
-                if (link.dataset.id === entry.target.id)
+                if (link.dataset.id === activeId) {
                   link.setAttribute("aria-current", "location");
-                else link.removeAttribute("aria-current");
+                } else {
+                  link.removeAttribute("aria-current");
+                }
               });
             }
           },
-          { rootMargin: "-5% 0px -60% 0px" },
+          { rootMargin: "-10% 0px -40% 0px" }, // Optimized detection band
         );
-        sections.forEach((section) => observer.observe(section));
+
+        sections.forEach((s) => observer.observe(s));
       }
     </script>
 
