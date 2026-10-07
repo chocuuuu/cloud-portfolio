@@ -202,10 +202,12 @@ const commands = [
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <script is:inline define:vars={{ onProjects }}>
+    <script>
       // Highlight the section in view
+      const onProjects = document.body.dataset.page === "projects";
+
       if (!onProjects && "IntersectionObserver" in window) {
-        const links = document.querySelectorAll("nav a[data-id]");
+        const links = document.querySelectorAll<HTMLElement>("nav a[data-id]");
         const sections = document.querySelectorAll(".page > section[id]");
         const visibleSections = new Set();
 
@@ -237,7 +239,7 @@ const commands = [
           { rootMargin: "-10% 0px -40% 0px" }, // Optimized detection band
         );
 
-        sections.forEach((s) => observer.observe(s));
+        sections.forEach((section) => observer.observe(section));
       }
     </script>
 
