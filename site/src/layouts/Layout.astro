@@ -209,7 +209,11 @@ const commands = [
       if (!onProjects && "IntersectionObserver" in window) {
         const links = document.querySelectorAll<HTMLElement>("nav a[data-id]");
         const sections = document.querySelectorAll(".page > section[id]");
+        const nav = document.querySelector<HTMLElement>(
+          "nav[aria-label='Primary']",
+        );
         const visibleSections = new Set();
+        let activeId: string | undefined;
 
         const observer = new IntersectionObserver(
           (entries) => {
@@ -222,18 +226,51 @@ const commands = [
             }
 
             // Find the first section in DOM order that is currently visible
-            const activeId = Array.from(sections).find((s) =>
+            const nextActiveId = Array.from(sections).find((s) =>
               visibleSections.has(s.id),
             )?.id;
 
-            if (activeId) {
+            if (nextActiveId) {
               links.forEach((link) => {
-                if (link.dataset.id === activeId) {
+                if (link.dataset.id === nextActiveId) {
                   link.setAttribute("aria-current", "location");
                 } else {
                   link.removeAttribute("aria-current");
                 }
               });
+
+              if (
+                nextActiveId !== activeId &&
+                nav &&
+                matchMedia("(max-width: 900px)").matches
+              ) {
+                const activeLink = Array.from(links).find(
+                  (link) => link.dataset.id === nextActiveId,
+                );
+                if (activeLink) {
+                  const navRect = nav.getBoundingClientRect();
+                  const linkRect = activeLink.getBoundingClientRect();
+                  const behavior = matchMedia(
+                    "(prefers-reduced-motion: reduce)",
+                  ).matches
+                    ? "auto"
+                    : "smooth";
+
+                  if (linkRect.left < navRect.left) {
+                    nav.scrollBy({
+                      left: linkRect.left - navRect.left,
+                      behavior,
+                    });
+                  } else if (linkRect.right > navRect.right) {
+                    nav.scrollBy({
+                      left: linkRect.right - navRect.right,
+                      behavior,
+                    });
+                  }
+                }
+              }
+
+              activeId = nextActiveId;
             }
           },
           { rootMargin: "-10% 0px -40% 0px" }, // Optimized detection band
@@ -1176,6 +1213,7 @@ const commands = [
     nav {
       order: 3;
       width: 100%;
+      min-width: 0;
       margin-top: 0;
       overflow-x: auto;
       scrollbar-width: none;
