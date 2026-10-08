@@ -1191,8 +1191,21 @@ const commands = [
 
     nav ul {
       display: flex;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
       gap: 1.5rem;
       padding-block: 0.2rem;
+    }
+
+    nav ul::-webkit-scrollbar {
+      display: none;
+    }
+
+    nav ul li {
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     nav a {
