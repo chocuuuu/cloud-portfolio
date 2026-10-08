@@ -255,15 +255,16 @@ const commands = [
                   ).matches
                     ? "auto"
                     : "smooth";
+                  const scrollInset = 12;
 
-                  if (linkRect.left < navRect.left) {
+                  if (linkRect.left < navRect.left + scrollInset) {
                     nav.scrollBy({
-                      left: linkRect.left - navRect.left,
+                      left: linkRect.left - navRect.left - scrollInset,
                       behavior,
                     });
-                  } else if (linkRect.right > navRect.right) {
+                  } else if (linkRect.right > navRect.right - scrollInset) {
                     nav.scrollBy({
-                      left: linkRect.right - navRect.right,
+                      left: linkRect.right - navRect.right + scrollInset,
                       behavior,
                     });
                   }
@@ -1222,7 +1223,10 @@ const commands = [
     nav ul {
       display: flex;
       gap: 1.5rem;
+      width: max-content;
+      min-width: 100%;
       padding-block: 0.2rem;
+      padding-inline: 0.75rem;
     }
 
     nav a {
@@ -1243,7 +1247,7 @@ const commands = [
     }
 
     nav a[aria-current] {
-      transform: scale(1.12);
+      transform: none;
     }
 
     nav a[aria-current]::before {
