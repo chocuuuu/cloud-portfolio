@@ -230,6 +230,14 @@ const commands = [
               links.forEach((link) => {
                 if (link.dataset.id === activeId) {
                   link.setAttribute("aria-current", "location");
+
+                  if (window.innerWidth <= 900) {
+                    link.scrollIntoView({
+                      behavior: "smooth",
+                      inline: "center",
+                      block: "nearest",
+                    });
+                  }
                 } else {
                   link.removeAttribute("aria-current");
                 }
