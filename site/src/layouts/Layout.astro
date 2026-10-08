@@ -68,7 +68,10 @@ const commands = [
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
@@ -200,25 +203,80 @@ const commands = [
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
-      // Highlight the section in view (home page only).
+      // Highlight the section in view
       const onProjects = document.body.dataset.page === "projects";
 
       if (!onProjects && "IntersectionObserver" in window) {
         const links = document.querySelectorAll<HTMLElement>("nav a[data-id]");
         const sections = document.querySelectorAll(".page > section[id]");
+        const nav = document.querySelector<HTMLElement>(
+          "nav[aria-label='Primary']",
+        );
+        const visibleSections = new Set();
+        let activeId: string | undefined;
+
         const observer = new IntersectionObserver(
           (entries) => {
             for (const entry of entries) {
-              if (!entry.isIntersecting) continue;
+              if (entry.isIntersecting) {
+                visibleSections.add(entry.target.id);
+              } else {
+                visibleSections.delete(entry.target.id);
+              }
+            }
+
+            // Find the first section in DOM order that is currently visible
+            const nextActiveId = Array.from(sections).find((s) =>
+              visibleSections.has(s.id),
+            )?.id;
+
+            if (nextActiveId) {
               links.forEach((link) => {
-                if (link.dataset.id === entry.target.id)
+                if (link.dataset.id === nextActiveId) {
                   link.setAttribute("aria-current", "location");
-                else link.removeAttribute("aria-current");
+                } else {
+                  link.removeAttribute("aria-current");
+                }
               });
+
+              if (
+                nextActiveId !== activeId &&
+                nav &&
+                matchMedia("(max-width: 900px)").matches
+              ) {
+                const activeLink = Array.from(links).find(
+                  (link) => link.dataset.id === nextActiveId,
+                );
+                if (activeLink) {
+                  const navRect = nav.getBoundingClientRect();
+                  const linkRect = activeLink.getBoundingClientRect();
+                  const behavior = matchMedia(
+                    "(prefers-reduced-motion: reduce)",
+                  ).matches
+                    ? "auto"
+                    : "smooth";
+                  const scrollInset = 12;
+
+                  if (linkRect.left < navRect.left + scrollInset) {
+                    nav.scrollBy({
+                      left: linkRect.left - navRect.left - scrollInset,
+                      behavior,
+                    });
+                  } else if (linkRect.right > navRect.right - scrollInset) {
+                    nav.scrollBy({
+                      left: linkRect.right - navRect.right + scrollInset,
+                      behavior,
+                    });
+                  }
+                }
+              }
+
+              activeId = nextActiveId;
             }
           },
-          { rootMargin: "-30% 0px -60% 0px" },
+          { rootMargin: "-10% 0px -40% 0px" }, // Optimized detection band
         );
+
         sections.forEach((section) => observer.observe(section));
       }
     </script>
@@ -1021,6 +1079,7 @@ const commands = [
     font-weight: 600;
     border-radius: 6px;
     transition: background 0.15s ease;
+    white-space: nowrap;
   }
 
   .resume:hover {
@@ -1155,6 +1214,7 @@ const commands = [
     nav {
       order: 3;
       width: 100%;
+      min-width: 0;
       margin-top: 0;
       overflow-x: auto;
       scrollbar-width: none;
@@ -1163,7 +1223,10 @@ const commands = [
     nav ul {
       display: flex;
       gap: 1.5rem;
+      width: max-content;
+      min-width: 100%;
       padding-block: 0.2rem;
+      padding-inline: 0.75rem;
     }
 
     nav a {
@@ -1184,7 +1247,7 @@ const commands = [
     }
 
     nav a[aria-current] {
-      transform: scale(1.12);
+      transform: none;
     }
 
     nav a[aria-current]::before {

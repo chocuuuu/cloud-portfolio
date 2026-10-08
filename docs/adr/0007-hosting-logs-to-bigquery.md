@@ -1,7 +1,7 @@
 # 0007: Analytics from Hosting logs in BigQuery
 
 Status: Proposed
-Recorded: 2026-09-17
+Recorded: 2026-10-07
 
 ## Context
 

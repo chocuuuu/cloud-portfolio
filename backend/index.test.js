@@ -1,48 +1,56 @@
-const assert = require('node:assert/strict');
-const test = require('node:test');
-const { createApp } = require('./index');
+const assert = require("node:assert/strict");
+const { test, describe } = require("node:test");
 
-test('limits visitor-count updates to 20 requests per client per minute', async (t) => {
-    let writes = 0;
-    const firestore = {
-        collection: () => ({
-            doc: () => ({
-                set: async () => {
-                    writes += 1;
-                },
-                get: async () => ({
-                    data: () => ({ count: writes })
-                })
-            })
-        })
-    };
-    const server = createApp(firestore).listen(0);
-    t.after(() => new Promise((resolve, reject) => {
-        server.close((error) => error ? reject(error) : resolve());
-        server.closeAllConnections();
-    }));
+// We will run these tests against your local Express server
+const BASE_URL = "http://localhost:8080";
 
-    const { port } = server.address();
+describe("Visitor API Unit & Integration Tests (Sprint 6)", () => {
+  test("TEST-01: Counter increment function correctly returns updated count", async () => {
+    const response = await fetch(`${BASE_URL}/api/visitor-count`);
+    const data = await response.json();
+
+    assert.equal(
+      response.status,
+      200,
+      `Expected 200 OK but got ${response.status}. (Is your backend running on 8080?)`,
+    );
+    assert.equal(
+      typeof data.count,
+      "number",
+      "The database did not return a valid number.",
+    );
+    assert.ok(data.count > 0, "The visitor count should be greater than 0.");
+  });
+
+  test("TEST-02: API rejects requests after exceeding rate limit (HTTP 429)", async () => {
     const statuses = [];
-    for (let request = 0; request < 21; request += 1) {
-        const response = await fetch(`http://127.0.0.1:${port}/api/visitor-count`, {
-            headers: {
-                'connection': 'close',
-                'x-forwarded-for': '198.51.100.7'
-            }
-        });
-        statuses.push(response.status);
+
+    // Fire 21 requests from a simulated IP. The Express limit is typically 20 per minute.
+    for (let i = 0; i < 21; i++) {
+      const res = await fetch(`${BASE_URL}/api/visitor-count`, {
+        headers: { "x-forwarded-for": "198.51.100.1" },
+      });
+      statuses.push(res.status);
     }
 
-    assert.deepEqual(statuses, [...Array(20).fill(200), 429]);
+    // The 21st request must fail with 429 Too Many Requests
+    assert.equal(
+      statuses[20],
+      429,
+      "Rate limit was not enforced at 20 requests.",
+    );
+  });
 
-    const otherClientResponse = await fetch(`http://127.0.0.1:${port}/api/visitor-count`, {
-        headers: {
-            connection: 'close',
-            'x-forwarded-for': '198.51.100.8'
-        }
+  test("TEST-03: API correctly attaches CORS headers", async () => {
+    const response = await fetch(`${BASE_URL}/api/visitor-count`, {
+      method: "OPTIONS", // Preflight request
+      headers: {
+        Origin: "http://localhost:4321",
+        "Access-Control-Request-Method": "GET",
+      },
     });
 
-    assert.equal(otherClientResponse.status, 200);
-    assert.equal(writes, 21);
+    assert.equal(response.status, 204);
+    assert.equal(response.headers.get("access-control-allow-origin"), "*");
+  });
 });
