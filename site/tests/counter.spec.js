@@ -3,14 +3,14 @@ import { test, expect } from "@playwright/test";
 test("TEST-05: Visitor counter successfully fetches and renders live database integer", async ({
   page,
 }) => {
-  // 1. Navigate to the live production site
+  // 1. Navigate to the correct live production site
   await page.goto("https://cloud-portfolio-509107.web.app/");
 
-  // 2. Locate the visitor counter element in the DOM
-  const counter = page.locator("#visitor-count");
+  // 2. Locate the actual visitor counter element by its correct DOM ID
+  const counter = page.locator("#views-count");
 
-  // 3. Wait for the initial "Loading..." state to resolve
-  await expect(counter).not.toHaveText("Loading...", { timeout: 10000 });
+  // 3. Playwright Best Practice: Auto-retry until the element contains at least one digit
+  await expect(counter).toHaveText(/[0-9]+/, { timeout: 10000 });
 
   // 4. Extract the resolved text
   const countText = await counter.innerText();
