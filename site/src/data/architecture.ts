@@ -1,5 +1,3 @@
-// Add an `adr` link (for example your GitHub URL to docs/adr/0001-....md) to show a "Read the decision" link.
-
 export type ArchNode = {
 	id: string;
 	name: string;
@@ -14,6 +12,7 @@ export const lanes = ['Serving requests', 'Delivery', 'Infrastructure and analyt
 export const nodes: ArchNode[] = [
 	{
 		id: 'hosting',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0001-serverless-stack-on-google-cloud.md',
 		name: 'Firebase Hosting',
 		lane: 'Serving requests',
 		role: 'Serves the static Astro build to visitors from Google’s CDN.',
@@ -21,6 +20,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'cloud-run',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0004-runtime-identity-and-cost-caps.md',
 		name: 'Cloud Run',
 		lane: 'Serving requests',
 		role: 'Runs the Node.js visitor-count API in a small node:18-alpine container.',
@@ -28,6 +28,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'firestore',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0001-serverless-stack-on-google-cloud.md',
 		name: 'Firestore',
 		lane: 'Serving requests',
 		role: 'Stores the visitors collection that the API increments on every new session.',
@@ -35,6 +36,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'actions',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0003-workload-identity-federation.md',
 		name: 'GitHub Actions',
 		lane: 'Delivery',
 		role: 'On every push to main it runs Gitleaks, builds the Docker image, pushes it and deploys Cloud Run, then builds and deploys the site.',
@@ -42,6 +44,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'wif',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0003-workload-identity-federation.md',
 		name: 'Workload Identity Federation',
 		lane: 'Delivery',
 		role: 'Lets GitHub Actions authenticate to Google Cloud with short-lived tokens.',
@@ -56,6 +59,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'terraform',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0002-terraform-with-remote-state.md',
 		name: 'Terraform',
 		lane: 'Infrastructure and analytics',
 		role: 'Provisions Firestore, Firebase and the state bucket as code.',
@@ -63,6 +67,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'gcs-state',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0002-terraform-with-remote-state.md',
 		name: 'Cloud Storage',
 		lane: 'Infrastructure and analytics',
 		role: 'Holds the Terraform state file in a dedicated bucket, with locking.',
@@ -70,6 +75,7 @@ export const nodes: ArchNode[] = [
 	},
 	{
 		id: 'bigquery',
+		adr: 'https://github.com/chocuuuu/cloud-portfolio/blob/main/docs/adr/0007-hosting-logs-to-bigquery.md',
 		name: 'BigQuery',
 		lane: 'Infrastructure and analytics',
 		role: 'Receives Firebase Hosting access logs so page views can be counted with standard SQL.',
