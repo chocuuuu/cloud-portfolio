@@ -63,11 +63,15 @@ const auditHeaders = [
       project.links.length > 0 && (
         <div class="links">
           <h2>Links</h2>
-          {project.links.map((link) => (
-            <a href={link.href} target="_blank" rel="noopener">
-              {link.label}
-            </a>
-          ))}
+          <ul>
+            {project.links.map((link) => (
+              <li>
+                <a href={link.href} target="_blank" rel="noopener">
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       )
     }
@@ -278,10 +282,12 @@ const auditHeaders = [
   }
 
   .links ul {
+    list-style: none;
+    margin: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem 1.5rem;
-    padding-left: 1.25rem;
+    padding: 0;
   }
 
   .arch {
