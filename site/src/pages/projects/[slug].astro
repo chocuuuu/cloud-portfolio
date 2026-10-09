@@ -1,0 +1,444 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { projects } from "../../data/site";
+import { lanes, nodes } from "../../data/architecture";
+
+export function getStaticPaths() {
+  return projects.map((project) => ({
+    params: { slug: project.slug },
+    props: { project },
+  }));
+}
+
+const { project } = Astro.props;
+const isCloudPortfolio = project.slug === "serverless-cloud-portfolio";
+const first = nodes[0];
+
+const auditHeaders = [
+  { name: "Strict-Transport-Security", purpose: "Forces HTTPS" },
+  {
+    name: "Content-Security-Policy",
+    purpose: "Limits what the page can load and run",
+  },
+  { name: "X-Content-Type-Options", purpose: "Stops MIME-type sniffing" },
+  {
+    name: "Referrer-Policy",
+    purpose: "Limits what is sent when following links",
+  },
+  {
+    name: "Permissions-Policy",
+    purpose: "Turns off browser features the site does not use",
+  },
+  {
+    name: "X-Frame-Options",
+    purpose: "Blocks the site from being embedded elsewhere",
+  },
+  {
+    name: "Cross-Origin-Opener-Policy",
+    purpose: "Isolates the page from other windows",
+  },
+];
+---
+
+<Layout title={project.title} description={project.summary}>
+  <section class="project">
+    <p><a href="/projects/">← All projects</a></p>
+    <h1>{project.title}</h1>
+    <p>{project.summary}</p>
+
+    <dl class="rows facts">
+      <dt>Stack</dt>
+      <dd>{project.stack.join(", ")}</dd>
+      {project.details.map((detail) => (
+        <>
+          <dt>{detail.label}</dt>
+          <dd>{detail.text}</dd>
+        </>
+      ))}
+    </dl>
+
+    {project.links.length > 0 && (
+      <div class="links">
+        <h2>Links</h2>
+        <ul>
+          {project.links.map((link) => (
+            <li>
+              <a href={link.href} target="_blank" rel="noopener">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </section>
+
+  {isCloudPortfolio && (
+    <>
+      <section id="architecture">
+        <h2>Architecture</h2>
+        <p>
+          Select a service to see what it does in this project and why I chose
+          it.
+        </p>
+
+        <div class="arch" id="arch">
+          {lanes.map((lane) => (
+            <div class="lane">
+              <h3 class="lane-title">{lane}</h3>
+              <ol class="chain">
+                {nodes
+                  .filter((node) => node.lane === lane)
+                  .map((node) => (
+                    <li>
+                      <button
+                        type="button"
+                        class="node"
+                        data-role={node.role}
+                        data-why={node.why}
+                        data-adr={node.adr ?? ""}
+                        aria-pressed={node.id === first.id ? "true" : "false"}
+                        aria-controls="arch-detail"
+                      >
+                        {node.name}
+                      </button>
+                    </li>
+                  ))}
+              </ol>
+            </div>
+          ))}
+
+          <div class="detail" id="arch-detail" aria-live="polite">
+            <h3 data-d-name>{first.name}</h3>
+            <p data-d-role>{first.role}</p>
+            <p><strong>Why: </strong><span data-d-why>{first.why}</span></p>
+            <p data-d-adr hidden>
+              <a href="#" target="_blank" rel="noopener">
+                Read the decision record
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="security">
+        <h2>Security self-audit</h2>
+        <p>
+          This page reads its own response headers in your browser, right now.
+          Nothing in the table is hard-coded.
+        </p>
+
+        <div class="audit" id="audit">
+          <div class="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Header</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditHeaders.map((header) => (
+                  <tr data-header={header.name.toLowerCase()}>
+                    <th scope="row">
+                      {header.name}
+                      <small>{header.purpose}</small>
+                    </th>
+                    <td data-status>Reading…</td>
+                    <td data-value class="value">–</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p id="audit-summary" role="status">Reading headers…</p>
+        </div>
+
+        <p>
+          <a
+            id="observatory"
+            href="https://developer.mozilla.org/en-US/observatory"
+            target="_blank"
+            rel="noopener"
+          >
+            Re-scan this site with MDN Observatory
+          </a>
+        </p>
+      </section>
+    </>
+  )}
+</Layout>
+
+<script>
+  const arch = document.getElementById("arch");
+
+  if (arch) {
+    const nodes = Array.from(arch.querySelectorAll<HTMLButtonElement>(".node"));
+    const nameEl = arch.querySelector("[data-d-name]") as HTMLElement;
+    const roleEl = arch.querySelector("[data-d-role]") as HTMLElement;
+    const whyEl = arch.querySelector("[data-d-why]") as HTMLElement;
+    const adrWrap = arch.querySelector("[data-d-adr]") as HTMLElement;
+    const adrLink = adrWrap.querySelector("a") as HTMLAnchorElement;
+
+    const select = (button: HTMLButtonElement) => {
+      nodes.forEach((node) =>
+        node.setAttribute("aria-pressed", String(node === button)),
+      );
+      nameEl.textContent = button.textContent?.trim() ?? "";
+      roleEl.textContent = button.dataset.role ?? "";
+      whyEl.textContent = button.dataset.why ?? "";
+      const adr = button.dataset.adr;
+      if (adr) {
+        adrLink.href = adr;
+        adrWrap.hidden = false;
+      } else {
+        adrWrap.hidden = true;
+      }
+    };
+
+    nodes.forEach((node) => {
+      node.addEventListener("click", () => select(node));
+      node.addEventListener("focus", () => select(node));
+      node.addEventListener("mouseenter", () => select(node));
+    });
+  }
+
+  const audit = document.getElementById("audit");
+
+  if (audit) {
+    const summary = document.getElementById("audit-summary") as HTMLElement;
+    const local = ["localhost", "127.0.0.1"].includes(location.hostname);
+    const observatory = document.getElementById(
+      "observatory",
+    ) as HTMLAnchorElement | null;
+
+    if (observatory && !local) {
+      observatory.href = `https://developer.mozilla.org/en-US/observatory/analyze?host=${encodeURIComponent(location.hostname)}`;
+    }
+
+    fetch(location.href, { method: "HEAD", cache: "no-store" })
+      .then((response) => {
+        const rows = audit.querySelectorAll<HTMLElement>("tr[data-header]");
+        let present = 0;
+
+        rows.forEach((row) => {
+          const value = response.headers.get(row.dataset.header as string);
+          const statusCell = row.querySelector("[data-status]") as HTMLElement;
+          const valueCell = row.querySelector("[data-value]") as HTMLElement;
+
+          if (value) {
+            present++;
+            row.dataset.state = "ok";
+            statusCell.textContent = "Present";
+            valueCell.textContent =
+              value.length > 70 ? `${value.slice(0, 67)}…` : value;
+            valueCell.title = value;
+          } else {
+            row.dataset.state = "missing";
+            statusCell.textContent = "Missing";
+            valueCell.textContent = "–";
+          }
+        });
+
+        summary.textContent =
+          `${present} of ${rows.length} headers present.` +
+          (local
+            ? " The local dev server sends almost none of these, so check the deployed site."
+            : "");
+      })
+      .catch(() => {
+        summary.textContent = "Could not read the headers from this page.";
+      });
+  }
+</script>
+
+<style>
+  .project {
+    margin-bottom: 4rem;
+  }
+
+  .facts {
+    margin: 2rem 0 1.5rem;
+  }
+
+  .links {
+    margin-top: 2rem;
+  }
+
+  .links ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding-left: 1.25rem;
+  }
+
+  .arch {
+    margin-top: 2rem;
+  }
+
+  .lane {
+    margin-bottom: 1.75rem;
+  }
+
+  .lane-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 0.6rem;
+  }
+
+  .chain {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0;
+  }
+
+  .chain li {
+    display: flex;
+    align-items: center;
+  }
+
+  .chain li + li::before {
+    content: "";
+    width: 1.25rem;
+    height: 2px;
+    background: var(--rule);
+  }
+
+  .node {
+    padding: 0.55rem 0.95rem;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    cursor: pointer;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .node:hover {
+    border-color: var(--ink-soft);
+  }
+
+  .node[aria-pressed="true"] {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
+  .detail {
+    margin-top: 0.5rem;
+    padding: 1.5rem;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+  }
+
+  .detail h3 {
+    margin-bottom: 0.5rem;
+  }
+
+  .detail p:last-child {
+    margin-bottom: 0;
+  }
+
+  .scroll {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+
+  th,
+  td {
+    padding: 0.7rem 0.75rem 0.7rem 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  thead th {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  tbody th {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody th small {
+    display: block;
+    font-weight: 400;
+    color: var(--ink-soft);
+    white-space: normal;
+    min-width: 12rem;
+  }
+
+  .value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    word-break: break-all;
+    min-width: 10rem;
+  }
+
+  tr[data-state="ok"] [data-status] {
+    color: var(--live);
+    font-weight: 600;
+  }
+
+  tr[data-state="missing"] [data-status] {
+    color: var(--alert);
+    font-weight: 600;
+  }
+
+  #audit-summary {
+    margin: 1rem 0 0.5rem;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  @media (max-width: 560px) {
+    .chain {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+
+    .chain li + li::before {
+      display: none;
+    }
+
+    .node {
+      width: 100%;
+      text-align: left;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .node {
+      transition: none;
+    }
+
+    .node[aria-pressed="true"] {
+      transform: none;
+    }
+  }
+</style>
