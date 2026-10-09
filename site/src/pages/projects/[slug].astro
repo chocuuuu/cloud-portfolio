@@ -49,125 +49,138 @@ const auditHeaders = [
     <dl class="rows facts">
       <dt>Stack</dt>
       <dd>{project.stack.join(", ")}</dd>
-      {project.details.map((detail) => (
-        <>
-          <dt>{detail.label}</dt>
-          <dd>{detail.text}</dd>
-        </>
-      ))}
+      {
+        project.details.map((detail) => (
+          <>
+            <dt>{detail.label}</dt>
+            <dd>{detail.text}</dd>
+          </>
+        ))
+      }
     </dl>
 
-    {project.links.length > 0 && (
-      <div class="links">
-        <h2>Links</h2>
-        <ul>
-          {project.links.map((link) => (
-            <li>
+    {
+      project.links.length > 0 && (
+        <div class="links">
+          <h2>Links</h2>
+          <ul>
+            {project.links.map((link) => (
               <a href={link.href} target="_blank" rel="noopener">
                 {link.label}
               </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
+            ))}
+          </ul>
+        </div>
+      )
+    }
   </section>
 
-  {isCloudPortfolio && (
-    <>
-      <section id="architecture">
-        <h2>Architecture</h2>
-        <p>
-          Select a service to see what it does in this project and why I chose
-          it.
-        </p>
+  {
+    isCloudPortfolio && (
+      <>
+        <section id="architecture">
+          <h2>Architecture</h2>
+          <p>
+            Select a service to see what it does in this project and why I chose
+            it.
+          </p>
 
-        <div class="arch" id="arch">
-          {lanes.map((lane) => (
-            <div class="lane">
-              <h3 class="lane-title">{lane}</h3>
-              <ol class="chain">
-                {nodes
-                  .filter((node) => node.lane === lane)
-                  .map((node) => (
-                    <li>
-                      <button
-                        type="button"
-                        class="node"
-                        data-role={node.role}
-                        data-why={node.why}
-                        data-adr={node.adr ?? ""}
-                        aria-pressed={node.id === first.id ? "true" : "false"}
-                        aria-controls="arch-detail"
-                      >
-                        {node.name}
-                      </button>
-                    </li>
-                  ))}
-              </ol>
+          <div class="arch" id="arch">
+            {lanes.map((lane) => (
+              <div class="lane">
+                <h3 class="lane-title">{lane}</h3>
+                <ol class="chain">
+                  {nodes
+                    .filter((node) => node.lane === lane)
+                    .map((node) => (
+                      <li>
+                        <button
+                          type="button"
+                          class="node"
+                          data-role={node.role}
+                          data-why={node.why}
+                          data-adr={node.adr ?? ""}
+                          aria-pressed={node.id === first.id ? "true" : "false"}
+                          aria-controls="arch-detail"
+                        >
+                          {node.name}
+                        </button>
+                      </li>
+                    ))}
+                </ol>
+              </div>
+            ))}
+
+            <div class="detail" id="arch-detail" aria-live="polite">
+              <h3 data-d-name>{first.name}</h3>
+              <p data-d-role>{first.role}</p>
+              <p>
+                <>
+                  <strong>Why: </strong>
+                  <span data-d-why>{first.why}</span>
+                </>
+              </p>
+              <p data-d-adr hidden>
+                <a href="#" target="_blank" rel="noopener">
+                  Read the decision record
+                </a>
+              </p>
             </div>
-          ))}
+          </div>
+        </section>
 
-          <div class="detail" id="arch-detail" aria-live="polite">
-            <h3 data-d-name>{first.name}</h3>
-            <p data-d-role>{first.role}</p>
-            <p><strong>Why: </strong><span data-d-why>{first.why}</span></p>
-            <p data-d-adr hidden>
-              <a href="#" target="_blank" rel="noopener">
-                Read the decision record
-              </a>
+        <section id="security">
+          <h2>Security self-audit</h2>
+          <p>
+            This page reads its own response headers in your browser, right now.
+            Nothing in the table is hard-coded.
+          </p>
+
+          <div class="audit" id="audit">
+            <div class="scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Header</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditHeaders.map((header) => (
+                    <tr data-header={header.name.toLowerCase()}>
+                      <th scope="row">
+                        {header.name}
+                        <small>{header.purpose}</small>
+                      </th>
+                      <td data-status>Reading…</td>
+                      <td data-value class="value">
+                        –
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p id="audit-summary" role="status">
+              Reading headers…
             </p>
           </div>
-        </div>
-      </section>
 
-      <section id="security">
-        <h2>Security self-audit</h2>
-        <p>
-          This page reads its own response headers in your browser, right now.
-          Nothing in the table is hard-coded.
-        </p>
-
-        <div class="audit" id="audit">
-          <div class="scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Header</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {auditHeaders.map((header) => (
-                  <tr data-header={header.name.toLowerCase()}>
-                    <th scope="row">
-                      {header.name}
-                      <small>{header.purpose}</small>
-                    </th>
-                    <td data-status>Reading…</td>
-                    <td data-value class="value">–</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p id="audit-summary" role="status">Reading headers…</p>
-        </div>
-
-        <p>
-          <a
-            id="observatory"
-            href="https://developer.mozilla.org/en-US/observatory"
-            target="_blank"
-            rel="noopener"
-          >
-            Re-scan this site with MDN Observatory
-          </a>
-        </p>
-      </section>
-    </>
-  )}
+          <p>
+            <a
+              id="observatory"
+              href="https://developer.mozilla.org/en-US/observatory"
+              target="_blank"
+              rel="noopener"
+            >
+              Re-scan this site with MDN Observatory
+            </a>
+          </p>
+        </section>
+      </>
+    )
+  }
 </Layout>
 
 <script>
