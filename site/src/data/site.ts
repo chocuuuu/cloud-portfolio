@@ -30,7 +30,7 @@ export const certifications: Certification[] = [
   },
   {
     name: "2025 SAS Curiosity Cup Winner",
-    issuer: "SAS",  
+    issuer: "SAS",
     image: "/public/certs/sas.png",
     url: "https://www.credly.com/earner/earned/badge/e7479fd7-5b6c-48d7-8cd1-e83aaa9cbf25",
   },
@@ -44,13 +44,13 @@ export const certifications: Certification[] = [
     name: "Set Up an App Dev Environment on Google Cloud Skill Badge",
     issuer: "Google",
     image: "/public/certs/appdev.png",
-    url: "https://www.credly.com/earner/earned/badge/ba2a510b-4836-4fad-b05e-fc60437c0c8c"
+    url: "https://www.credly.com/earner/earned/badge/ba2a510b-4836-4fad-b05e-fc60437c0c8c",
   },
   {
     name: "Cloud Computing Fundamentals",
     issuer: "IBM SkillsBuild",
     image: "/public/certs/cloud.png",
-    url: "https://www.credly.com/earner/earned/badge/bf1d3129-aaa3-4c41-819c-f469360c212d"
+    url: "https://www.credly.com/earner/earned/badge/bf1d3129-aaa3-4c41-819c-f469360c212d",
   },
 ];
 
@@ -124,6 +124,108 @@ export const projects: Project[] = [
       },
     ],
   },
+  {
+    slug: "shoplifting-recognition-edtcn",
+    title: "Shoplifting Recognition via Hybrid ED-TCN",
+    summary:
+      "An undergraduate thesis project implementing a Hybrid Encoder-Decoder Temporal Convolutional Network (ED-TCN) with a Spatial-Temporal Pooling (STP) Attention mechanism to detect shoplifting behavior using pose-based action recognition.",
+    stack: ["Python", "TensorFlow", "PyTorch", "YOLOv8", "HRNet"],
+    details: [
+      {
+        label: "Model Architecture",
+        text: "Engineered a Hybrid ED-TCN backbone integrated with a custom Spatial-Temporal Pooling (STP) block to sequentially weight specific body parts and focus on critical frames.",
+      },
+      {
+        label: "Pose-Based Preprocessing",
+        text: "Utilized YOLOv8 and HRNet for automated keypoint extraction and motion gating, ensuring a more privacy-preserving analysis compared to raw RGB frame evaluation.",
+      },
+      {
+        label: "Evaluation Strategy",
+        text: "Implemented Stratified K-Fold Cross-Validation to balance shoplifting content per video, evaluating performance with Segmental F1-Score, AUC-PR, and Equal Error Rate (EER).",
+      },
+    ],
+    links: [
+      {
+        label: "Github Repository",
+        href: "https://github.com/cyrus-bcc/Thesis",
+      },
+      {
+        label: "ACM Writeup",
+        href: "https://acrobat.adobe.com/id/urn:aaid:sc:AP:6e29dbe8-1a4d-4cf3-857e-e1b09838fea7",
+      },
+    ],
+  },
+  {
+    slug: "fresco-by-meobel",
+    title: "Fresco by Meobel - Payroll and Attendance System",
+    summary:
+      "A full-stack Payroll and Attendance System for a restaurant with over 30 employees, designed to streamline attendance tracking, payroll processing, payslip generation, and scheduling.",
+    stack: [
+      "ReactJS",
+      "Tailwind CSS",
+      "PostgreSQL",
+      "Docker",
+      "Digital Ocean",
+      "Figma",
+    ],
+    details: [
+      {
+        label: "Architecture & Deployment",
+        text: "Led development from concept to deployment. Integrated a PostgreSQL backend, containerized the application with Docker, and deployed the production environment on Digital Ocean.",
+      },
+      {
+        label: "User Interface",
+        text: "Translated Figma designs into fully functional, responsive user interfaces using ReactJS and Tailwind CSS.",
+      },
+      {
+        label: "Core Features",
+        text: "Engineered biometric attendance logging, password-protected payslip generation, and comprehensive admin tools for employee CRUD operations, scheduling, and payroll modifications (including standard deductions like SSS, PhilHealth, and Pag-IBIG).",
+      },
+    ],
+    links: [
+      {
+        label: "Github Repository",
+        href: "https://github.com/chocuuuu/FrescoByMeobel",
+      },
+    ],
+  },
+  {
+    slug: "curiosity-cup-2025-alzheimers-prediction",
+    title: "The Curiosity Cup 2025: Winner, Data Preparation Category",
+    summary:
+      "Winner of the Data Preparation category in the SAS Global Student Competition 2025. Contributed to early detection models for Alzheimer's Disease using SAS Viya Workbench and XGBoost.",
+    stack: [
+      "SAS Viya Workbench",
+      "XGBoost",
+      "Python",
+      "Data Cleansing",
+      "Predictive Modeling",
+    ],
+    details: [
+      {
+        label: "Competition & Award",
+        text: "Contributed to Team Data ACES' project 'Predictive Model Trends: Predicting Early Detection of Alzheimer’s Disease,' earning top honors in the Data Preparation category.",
+      },
+      {
+        label: "Model Performance",
+        text: "Implemented XGBoost classification models on Kaggle datasets, achieving up to 95.77% prediction accuracy and thoroughly documenting the workflow.",
+      },
+      {
+        label: "Data Engineering",
+        text: "Performed data cleaning and validation, handling missing values, encoding categorical data, and extracting key predictive clinical features such as CDR, MMSE, and CSF Amyloid.",
+      },
+    ],
+    links: [
+      {
+        label: "SAS Announcement",
+        href: "https://www.sas.com/en_sa/news/press-releases/2025/may/curiosity-cup.html",
+      },
+      {
+        label: "Team Writeup",
+        href: "https://communities.sas.com/t5/SAS-Communities-Library/Team-Data-ACES-Winner-of-The-Curiosity-Cup-2025/ta-p/977157",
+      },
+    ],
+  },
 ];
 
 export type Experience = {
@@ -187,22 +289,24 @@ export const skills: { group: string; items: string[] }[] = [
 ];
 
 export const navItems = [
-    {
-        id: 'about',
-        label: 'About'
-    }, 
-    ...certifications.length || inProgress.length ? [{ id: 'certifications', label: 'Certifications' }] : [],
-    {
-        id: 'projects',
-        label: 'Projects'
-    },
-    ...experience.length ? [{ id: 'experience', label: 'Experience' }] : [],
-    { 
-        id: 'skills',
-        label: 'Skills'
-    },
-    {
-        id: 'contact',
-        label: 'Contact'
-    }
-]
+  {
+    id: "about",
+    label: "About",
+  },
+  ...(certifications.length || inProgress.length
+    ? [{ id: "certifications", label: "Certifications" }]
+    : []),
+  {
+    id: "projects",
+    label: "Projects",
+  },
+  ...(experience.length ? [{ id: "experience", label: "Experience" }] : []),
+  {
+    id: "skills",
+    label: "Skills",
+  },
+  {
+    id: "contact",
+    label: "Contact",
+  },
+];
