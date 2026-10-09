@@ -42,7 +42,9 @@ const auditHeaders = [
 
 <Layout title={project.title} description={project.summary}>
   <section class="project">
-    <p><a href="/projects/">← All projects</a></p>
+    <p class="back-link">
+      <a href="/#projects"><span aria-hidden="true">←</span> Back to projects</a>
+    </p>
     <h1>{project.title}</h1>
     <p>{project.summary}</p>
 
@@ -271,6 +273,29 @@ const auditHeaders = [
 <style>
   .project {
     margin-bottom: 4rem;
+  }
+
+  .back-link {
+    margin: 0 0 1.5rem;
+  }
+
+  .back-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 550;
+  }
+
+  .back-link a:hover {
+    color: var(--ink);
+    border-color: var(--ink-soft);
+    background: var(--paper);
   }
 
   .facts {
