@@ -111,7 +111,7 @@ const imageSrc = (path: string) => {
       projects.map((p) => (
         <article class="project">
           <h3>
-            <a href="/projects">{p.title}</a>
+            <a href={`/projects/${p.slug}/`}>{p.title}</a>
           </h3>
           <p>{p.summary}</p>
           <p class="tech">{p.stack.join(", ")}</p>
