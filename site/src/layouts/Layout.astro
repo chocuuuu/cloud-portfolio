@@ -144,6 +144,23 @@ const commands = [
             </span>
           </div>
 
+          <div
+            class="views downloads"
+            id="resume-downloads"
+            data-api={profile.resumeDownloadsApi}
+          >
+            <span class="views-label">Resume downloads</span>
+            <span
+              class="views-count downloads-count"
+              id="downloads-count"
+              aria-label="Loading resume download count"
+              aria-live="polite">–</span
+            >
+            <span class="badge views-badge" title="Counted from BigQuery Hosting logs">
+              <i class="dot live" aria-hidden="true"></i>Live · BigQuery
+            </span>
+          </div>
+
           <a
             href={`${profile.resume}?src=sidebar`}
             class="resume"
@@ -386,6 +403,45 @@ const commands = [
             .catch(() => {
               paintStatus({ ok: false, ms: 0 });
               showAfterMinimum("–");
+            });
+        }
+      }
+
+      const resumeDownloads = document.getElementById("resume-downloads");
+      const downloadsCount = document.getElementById("downloads-count");
+
+      if (resumeDownloads && downloadsCount) {
+        const showDownloads = (text: string, label: string) => {
+          downloadsCount.textContent = text;
+          downloadsCount.setAttribute("aria-label", label);
+        };
+
+        let cachedDownloads: string | null = null;
+        try {
+          cachedDownloads = sessionStorage.getItem("resume-downloads-count");
+        } catch {}
+
+        if (cachedDownloads) {
+          showDownloads(cachedDownloads, `${cachedDownloads} resume downloads`);
+        } else {
+          fetch(resumeDownloads.dataset.api as string)
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.json();
+            })
+            .then((data) => {
+              const count = Number(data.count);
+              if (!Number.isSafeInteger(count) || count < 0) {
+                throw new Error("Invalid resume download count");
+              }
+              const text = count.toLocaleString();
+              try {
+                sessionStorage.setItem("resume-downloads-count", text);
+              } catch {}
+              showDownloads(text, `${text} resume downloads`);
+            })
+            .catch(() => {
+              showDownloads("Unavailable", "Resume download count unavailable");
             });
         }
       }
@@ -1020,6 +1076,13 @@ const commands = [
     display: none;
   }
 
+  .downloads-count::after {
+    content: " downloads";
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
   /* Loading widget, removed from the page as soon as the count arrives */
   .loader {
     position: relative;
@@ -1269,6 +1332,10 @@ const commands = [
       font-size: 0.8rem;
       font-weight: 400;
       color: var(--ink-soft);
+    }
+
+    .downloads-count::after {
+      content: " downloads";
     }
 
     .resume span {
