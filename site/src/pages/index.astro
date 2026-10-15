@@ -11,7 +11,7 @@ import {
 
 const showCerts = certifications.length > 0 || inProgress.length > 0;
 
-// Badge images live in certs 
+// Badge images live in certs
 const imageSrc = (path: string) => {
   if (/^(https?:)?\/\//.test(path)) return path;
   return "/" + path.replace(/^\/+/, "").replace(/^public\//, "");
@@ -168,7 +168,8 @@ const imageSrc = (path: string) => {
       <dt>LinkedIn</dt>
       <dd>
         <a href={profile.linkedin} target="_blank" rel="noopener"
-          >{profile.linkedin.replace("https://www.", "")}</a>
+          >{profile.linkedin.replace("https://www.", "")}</a
+        >
       </dd>
       {
         profile.github && (
@@ -183,7 +184,9 @@ const imageSrc = (path: string) => {
         )
       }
       <dt>Resume</dt>
-      <dd><a href={profile.resume} download>Download PDF</a></dd>
+      <dd>
+        <a href={`${profile.resume}?src=contact`} download>Download PDF</a>
+      </dd>
     </dl>
   </section>
 </Layout>

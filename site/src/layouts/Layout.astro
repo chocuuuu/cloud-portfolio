@@ -42,7 +42,7 @@ const commands = [
   {
     label: "Download resume",
     group: "Actions",
-    href: profile.resume,
+    href: `${profile.resume}?src=palette`,
     download: true,
   },
   {
@@ -145,7 +145,7 @@ const commands = [
           </div>
 
           <a
-            href={profile.resume}
+            href={`${profile.resume}?src=sidebar`}
             class="resume"
             download
             aria-label="Download resume"
@@ -238,7 +238,6 @@ const commands = [
                   link.removeAttribute("aria-current");
                 }
               });
-
               if (
                 nextActiveId !== activeId &&
                 nav &&
@@ -276,7 +275,6 @@ const commands = [
           },
           { rootMargin: "-10% 0px -40% 0px" }, // Optimized detection band
         );
-
         sections.forEach((section) => observer.observe(section));
       }
     </script>

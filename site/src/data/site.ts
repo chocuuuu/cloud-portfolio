@@ -23,6 +23,12 @@ export type Certification = {
 
 export const certifications: Certification[] = [
   {
+    name: "ServiceNow Certified Application Developer",
+    issuer: "ServiceNow",
+    image: "/public/certs/cad.png",
+    url: "https://www.credly.com/earner/earned/badge/723e40af-46d7-435d-817e-ed34994f3fb6"
+  },
+  {
     name: "ServiceNow Certified System Administrator",
     issuer: "ServiceNow",
     image: "/public/certs/csa.png",
