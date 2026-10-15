@@ -1,6 +1,6 @@
 # 0007: Analytics from Hosting logs in BigQuery
 
-Status: Proposed
+Status: Accepted
 Recorded: 2026-10-07
 
 ## Context
@@ -23,3 +23,5 @@ Link Firebase Hosting to Cloud Logging, route those logs to a BigQuery dataset w
 - Raw logs still contain IP addresses until they expire, so the raw dataset must stay private.
 - The daily hash is pseudonymous, not anonymous. It supports counting unique visitors per day and nothing more.
 - Query and storage use should stay well inside BigQuery's free allowances at this traffic level.
+- The public Cloud Run API returns only the aggregate count of non-bot resume-download requests from `analytics.resume_downloads`. It does not expose visitor identifiers, user agents, or referrers.
+- The API runtime can query only this authorized view, not the raw Hosting logs. Its result is cached for 15 minutes.

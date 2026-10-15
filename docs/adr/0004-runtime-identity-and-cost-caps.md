@@ -9,7 +9,7 @@ The visitor-count endpoint is public by design, because the browser calls it dir
 
 ## Decision
 
-- Cloud Run runs as a dedicated account, `visitor-api-sa`, which holds only `roles/datastore.user`.
+- Cloud Run runs as the pre-provisioned dedicated account, `visitor-api-sa`, which holds `roles/datastore.user`, `roles/bigquery.jobUser`, and read access only to the authorized `analytics.resume_downloads` view.
 - The deploy account may act as that account (`roles/iam.serviceAccountUser`, scoped to that single account).
 - Every deploy sets `--max-instances 3`, `--concurrency 20`, `--memory 256Mi`, and `--timeout 10s`, so cost and load have a ceiling.
 - Budget alerts email me early. A budget does not stop spending, so the instance cap is the real limit.

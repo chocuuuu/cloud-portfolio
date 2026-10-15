@@ -62,6 +62,56 @@ resource "google_project_service" "firebase_api" {
     disable_on_destroy = false      
 }
 
+resource "google_project_service" "bigquery_api" {
+    service = "bigquery.googleapis.com"
+    disable_on_destroy = false
+}
+
+data "google_service_account" "visitor_api" {
+    account_id = "visitor-api-sa@cloud-portfolio-509107.iam.gserviceaccount.com"
+}
+
+resource "google_project_iam_member" "visitor_api_firestore" {
+    project = "cloud-portfolio-509107"
+    role    = "roles/datastore.user"
+    member  = "serviceAccount:${data.google_service_account.visitor_api.email}"
+}
+
+resource "google_project_iam_member" "visitor_api_bigquery_jobs" {
+    project    = "cloud-portfolio-509107"
+    role       = "roles/bigquery.jobUser"
+    member     = "serviceAccount:${data.google_service_account.visitor_api.email}"
+    depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_bigquery_table_iam_member" "visitor_api_resume_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "analytics"
+    table_id   = "resume_downloads"
+    role       = "roles/bigquery.dataViewer"
+    member     = "serviceAccount:${data.google_service_account.visitor_api.email}"
+    depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_bigquery_dataset_access" "resume_downloads_authorized_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "hosting_logs"
+
+    view {
+        project_id = "cloud-portfolio-509107"
+        dataset_id = "analytics"
+        table_id   = "resume_downloads"
+    }
+
+    depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_service_account_iam_member" "github_deployer_can_act_as_api" {
+    service_account_id = data.google_service_account.visitor_api.name
+    role               = "roles/iam.serviceAccountUser"
+    member             = "serviceAccount:github-actions-deployer@cloud-portfolio-509107.iam.gserviceaccount.com"
+}
+
 # Provision Firestore database in Native mode
 resource "google_firestore_database" "database" {
     name        = "(default)"

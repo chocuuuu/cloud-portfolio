@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@google-cloud/bigquery": "^8.1.1",
     "@google-cloud/firestore": "^9.3.0",
     "cors": "^2.8.6",
     "express": "^5.2.1",

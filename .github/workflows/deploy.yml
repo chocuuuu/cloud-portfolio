@@ -91,5 +91,6 @@ jobs:
             --region us-central1 \
             --max 3 \
             --concurrency 20 \
+            --service-account visitor-api-sa@cloud-portfolio-509107.iam.gserviceaccount.com \
             --allow-unauthenticated \
             --project cloud-portfolio-509107
