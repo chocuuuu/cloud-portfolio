@@ -2,7 +2,9 @@
 import Layout from "../../layouts/Layout.astro";
 import { profile } from "../../data/site";
 
-const googleClientId = import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
+const googleClientId =
+  import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ||
+  "240644792863-iacdaa4uig74pb3g3f0rn123ue2bgr9u.apps.googleusercontent.com";
 ---
 
 <Layout title="Private analytics" description="Owner-only portfolio analytics dashboard.">
@@ -16,12 +18,14 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
     data-api={profile.analyticsApi}
     data-client-id={googleClientId}
   >
-    <p class="eyebrow">Owner access only</p>
-    <h1>Portfolio analytics</h1>
-    <p class="lede">
-      Aggregated traffic, resume downloads, referrers, and 404 probing. Visitor
-      IP addresses and raw request records are never sent to this dashboard.
-    </p>
+    <header class="analytics-header">
+      <p class="eyebrow">Owner access only</p>
+      <h1>Portfolio analytics</h1>
+      <p class="lede">
+        Aggregated traffic, resume downloads, referrers, and 404 probing. Visitor
+        IP addresses and raw request records are never sent to this dashboard.
+      </p>
+    </header>
 
     <p class="notice" id="setup-notice" role="status" hidden>
       Google sign-in is not configured yet. Add the Google OAuth web client ID
@@ -38,34 +42,39 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
 
     <div id="dashboard" hidden>
       <form id="filters" class="filters">
-        <label>
-          From
-          <input id="start-date" type="date" required />
-        </label>
-        <label>
-          To
-          <input id="end-date" type="date" required />
-        </label>
-        <label class="check">
-          <input id="include-bots" type="checkbox" />
-          Include bot requests in traffic charts
-        </label>
-        <label>
+        <div class="date-range">
+          <label>
+            From
+            <input id="start-date" type="date" required />
+          </label>
+          <label>
+            To
+            <input id="end-date" type="date" required />
+          </label>
+        </div>
+        <label class="display-filter">
           Display
           <select id="display-mode">
             <option value="chart">Charts</option>
             <option value="table">Tables</option>
           </select>
         </label>
-        <label>
+        <label class="search-filter">
           Filter labels
           <input id="search" type="search" placeholder="Browser, source, path…" />
         </label>
-        <button type="submit">Apply dates</button>
-        <button type="button" class="secondary" id="sign-out">Sign out</button>
+        <label class="check">
+          <input id="include-bots" type="checkbox" />
+          Include bot requests
+        </label>
+        <div class="filter-actions">
+          <button type="submit">Apply filters</button>
+          <button type="button" class="secondary" id="sign-out">Sign out</button>
+        </div>
       </form>
 
       <p class="status" id="dashboard-status" role="status" aria-live="polite"></p>
+      <h2 class="section-title">Overview</h2>
       <div class="cards" id="summary"></div>
 
       <p class="notice">
@@ -76,7 +85,7 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
       </p>
       <p class="subtle">
         Probing counts are 404 requests only; they indicate paths that were not
-        found, not confirmed attacks. The source breakdown uses <code>src</code>
+        found, not confirmed attacks. The source breakdown uses <code>src</code>{" "}
         tags on resume links. Referrer hosts are shown separately.
       </p>
 
@@ -357,37 +366,358 @@ const googleClientId = import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
 </script>
 
 <style>
-  .analytics { max-width: 1100px; }
-  .eyebrow { color: var(--accent, #64d8b1); font-size: .75rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
-  .lede { max-width: 70ch; color: var(--muted, #aab4c4); }
-  .notice, .subtle { padding: .9rem 1rem; border: 1px solid var(--line, #334155); border-radius: .75rem; color: var(--muted, #aab4c4); }
-  .notice { background: color-mix(in srgb, var(--accent, #64d8b1) 7%, transparent); }
-  .subtle { font-size: .9rem; }
-  .filters { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem; margin: 1.5rem 0; }
-  .filters label { display: grid; gap: .35rem; font-size: .82rem; }
-  .filters .check { display: flex; align-items: center; gap: .45rem; min-height: 2.6rem; }
-  input, select, button { min-height: 2.6rem; padding: .45rem .65rem; border: 1px solid var(--line, #334155); border-radius: .5rem; color: inherit; background: var(--surface, #101722); font: inherit; }
-  input[type="checkbox"] { min-height: auto; accent-color: var(--accent, #64d8b1); }
-  button { cursor: pointer; background: var(--accent, #64d8b1); color: #09120f; font-weight: 700; }
-  button.secondary { background: transparent; color: inherit; }
-  .status { min-height: 1.5rem; color: var(--muted, #aab4c4); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .8rem; margin: 1.4rem 0; }
-  .card { display: grid; gap: .4rem; padding: 1rem; border: 1px solid var(--line, #334155); border-radius: .8rem; background: var(--surface, #101722); }
-  .card-label, .card small, .empty { color: var(--muted, #aab4c4); }
-  .card strong { font-size: 1.65rem; }
-  .card small { line-height: 1.35; }
-  .reports { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; }
-  .report { min-width: 0; padding: 1rem; border: 1px solid var(--line, #334155); border-radius: .8rem; }
-  .report h2 { margin-top: 0; font-size: 1.05rem; }
-  .report-content { display: grid; gap: .65rem; }
-  .bar-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(70px, 2fr) auto; align-items: center; gap: .6rem; font-size: .85rem; }
-  .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-track { height: .55rem; overflow: hidden; border-radius: 1rem; background: var(--line, #334155); }
-  .bar { display: block; height: 100%; border-radius: inherit; background: var(--accent, #64d8b1); }
-  .report table { width: 100%; border-collapse: collapse; font-size: .84rem; text-align: left; }
-  .report th, .report td { padding: .45rem; border-bottom: 1px solid var(--line, #334155); }
-  .report td { text-align: right; }
+  .analytics {
+    width: 100%;
+    max-width: 1100px;
+    --analytics-accent: #12714a;
+  }
+
+  .analytics-header {
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .eyebrow {
+    margin-bottom: 0.65rem;
+    color: var(--analytics-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .analytics h1 {
+    margin-bottom: 0.8rem;
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+  }
+
+  .lede {
+    max-width: 68ch;
+    margin-bottom: 0;
+    color: var(--ink-soft);
+    text-align: left;
+  }
+
+  .notice,
+  .subtle {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    color: var(--ink-soft);
+    text-align: left;
+  }
+
+  .notice {
+    background: color-mix(in srgb, var(--analytics-accent) 6%, var(--paper));
+  }
+
+  .subtle {
+    font-size: 0.9rem;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(8rem, 0.7fr) minmax(11rem, 1fr) auto;
+    align-items: end;
+    gap: 1rem;
+    margin: 1.5rem 0 0.75rem;
+    padding: 1.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--paper);
+  }
+
+  .date-range {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .filters label {
+    display: grid;
+    gap: 0.35rem;
+    color: var(--ink-soft);
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  .filters input,
+  .filters select,
+  .filters button {
+    width: 100%;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--rule);
+    border-radius: 7px;
+    color: var(--ink);
+    background: var(--paper);
+    font: inherit;
+  }
+
+  .filters input:focus-visible,
+  .filters select:focus-visible {
+    border-color: var(--signal);
+  }
+
+  .filters .check {
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 0.55rem;
+    min-height: 2.75rem;
+    white-space: nowrap;
+  }
+
+  .filters .check input {
+    width: 1rem;
+    min-height: 1rem;
+    accent-color: var(--analytics-accent);
+  }
+
+  .filter-actions {
+    display: flex;
+    gap: 0.55rem;
+  }
+
+  .filters button {
+    width: auto;
+    padding-inline: 0.9rem;
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .filters button:hover {
+    background: var(--ink-soft);
+  }
+
+  .filters button.secondary {
+    border-color: var(--rule);
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .filters button.secondary:hover {
+    background: var(--fog);
+  }
+
+  .status {
+    min-height: 1.5rem;
+    margin: 0 0 1rem;
+    color: var(--ink-soft);
+    font-size: 0.88rem;
+    text-align: left;
+  }
+
+  .section-title {
+    margin: 1.7rem 0 0.9rem;
+    font-size: 1.35rem;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+    margin: 0 0 1.25rem;
+  }
+
+  .analytics :global(.card) {
+    display: grid;
+    align-content: start;
+    gap: 0.3rem;
+    min-width: 0;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--paper);
+    box-shadow: 0 2px 8px rgba(22, 33, 43, 0.035);
+  }
+
+  .analytics :global(.card-label),
+  .analytics :global(.card small),
+  .analytics :global(.empty) {
+    color: var(--ink-soft);
+  }
+
+  .analytics :global(.card-label) {
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+
+  .analytics :global(.card strong) {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .analytics :global(.card small) {
+    font-size: 0.77rem;
+    line-height: 1.4;
+  }
+
+  .reports {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .report {
+    min-width: 0;
+    padding: 1.1rem;
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--paper);
+  }
+
+  .report:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .report h2 {
+    margin: 0 0 1rem;
+    font-size: 1.08rem;
+    letter-spacing: -0.01em;
+  }
+
+  .report-content {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .analytics :global(.empty) {
+    margin: 0;
+    text-align: left;
+  }
+
+  .analytics :global(.bar-row) {
+    display: grid;
+    grid-template-columns: minmax(7rem, 1fr) minmax(4rem, 2fr) auto;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.86rem;
+  }
+
+  .analytics :global(.bar-label) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .analytics :global(.bar-track) {
+    height: 0.55rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--fog);
+  }
+
+  .analytics :global(.bar) {
+    display: block;
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+    background: var(--analytics-accent);
+  }
+
+  .analytics :global(.bar-row strong) {
+    min-width: 2.5rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .analytics :global(.report table) {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    text-align: left;
+  }
+
+  .analytics :global(.report th),
+  .analytics :global(.report td) {
+    padding: 0.55rem 0.45rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .analytics :global(.report thead th) {
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .analytics :global(.report tbody th) {
+    font-weight: 500;
+  }
+
+  .analytics :global(.report td) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (max-width: 900px) {
+    .filters {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .search-filter {
+      grid-column: span 1;
+    }
+
+    .filter-actions {
+      justify-content: end;
+    }
+  }
+
   @media (max-width: 600px) {
-    .bar-row { grid-template-columns: minmax(70px, 1fr) minmax(45px, 1.2fr) auto; gap: .4rem; font-size: .75rem; }
+    .filters,
+    .date-range {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .filters .check {
+      justify-self: start;
+    }
+
+    .filter-actions {
+      justify-content: stretch;
+    }
+
+    .filter-actions button {
+      flex: 1;
+    }
+
+    .cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .analytics :global(.card) {
+      padding: 0.85rem;
+    }
+
+    .analytics :global(.card strong) {
+      font-size: 1.65rem;
+    }
+
+    .reports {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .report:first-child {
+      grid-column: auto;
+    }
+
+    .analytics :global(.bar-row) {
+      grid-template-columns: minmax(5.5rem, 1fr) minmax(3rem, 1.4fr) auto;
+      gap: 0.5rem;
+      font-size: 0.78rem;
+    }
+
+    .analytics :global(.report) {
+      overflow-x: auto;
+    }
   }
 </style>
