@@ -1,6 +1,6 @@
 -- Privacy-friendly analytics from Firebase Hosting request logs.
 -- Raw logs live in the `hosting_logs` dataset (private, 90-day expiry).
--- Everything below reads from the `analytics` dataset, never the raw tables.
+-- Authorized views read the raw logs; reports below read from the `analytics` dataset.
 --
 -- Before running the view, check the real column names your sink created:
 --   bq show --schema --format=prettyjson cloud-portfolio-509107:hosting_logs.<table name>
@@ -12,18 +12,21 @@ WITH requests AS (
   SELECT
     timestamp,
     REGEXP_EXTRACT(httpRequest.requestUrl, r'^https?://[^/]+(/[^?#]*)') AS path,
+    REGEXP_EXTRACT(httpRequest.requestUrl, r'[?&]src=([^&#]+)') AS src,
     REGEXP_EXTRACT(httpRequest.referer, r'^https?://([^/]+)') AS referrer_host,
     COALESCE(httpRequest.userAgent, '') AS user_agent,
     COALESCE(httpRequest.remoteIp, '') AS remote_ip,
     httpRequest.status AS status
-  FROM `cloud-portfolio-509107.hosting_logs.*`
+  FROM `cloud-portfolio-509107.hosting_logs.firebasehosting_googleapis_com_webrequests`
 )
 SELECT
   DATE(timestamp) AS day,
   path,
-  referrer_host,
+  COALESCE(src, referrer_host, '(direct)') AS source,
   user_agent,
-  REGEXP_CONTAINS(user_agent, r'(?i)bot|crawl|spider|slurp|preview|monitor|headless') AS is_bot,
+  (user_agent = '' OR REGEXP_CONTAINS(user_agent,
+    r'(?i)bot|crawl|spider|slurp|preview|monitor|headless|curl|wget|python|go-http|java/|okhttp|axios|node-fetch|scrapy|facebookexternalhit|whatsapp|telegram|discord')) AS is_bot,
+  REGEXP_CONTAINS(user_agent, r'(?i)mobi|android|iphone|ipad') AS is_mobile,
   TO_HEX(SHA256(CONCAT(remote_ip, '|', user_agent, '|', CAST(DATE(timestamp) AS STRING)))) AS visitor_id
 FROM requests
 WHERE status = 200
@@ -49,7 +52,7 @@ ORDER BY views DESC
 LIMIT 10;
 
 -- 4. Where visitors come from
-SELECT IFNULL(referrer_host, '(direct)') AS referrer, COUNT(*) AS views
+SELECT IFNULL(source, '(direct)') AS referrer, COUNT(*) AS views
 FROM `cloud-portfolio-509107.analytics.page_views`
 WHERE NOT is_bot
 GROUP BY referrer
@@ -90,18 +93,22 @@ WITH requests AS (
     COALESCE(httpRequest.userAgent, '') AS user_agent,
     COALESCE(httpRequest.remoteIp, '') AS remote_ip,
     httpRequest.status AS status
-  FROM `cloud-portfolio-509107.hosting_logs.*`
+  FROM `cloud-portfolio-509107.hosting_logs.firebasehosting_googleapis_com_webrequests`
 )
 SELECT
   DATE(timestamp) AS day,
   timestamp,
   source,
   user_agent,
-  REGEXP_CONTAINS(user_agent, r'(?i)bot|crawl|spider|slurp|preview|monitor|headless') AS is_bot,
+  (user_agent = '' OR REGEXP_CONTAINS(user_agent,
+    r'(?i)bot|crawl|spider|slurp|preview|monitor|headless|curl|wget|python|go-http|java/|okhttp|axios|node-fetch|scrapy|facebookexternalhit|whatsapp|telegram|discord')) AS is_bot,
   TO_HEX(SHA256(CONCAT(remote_ip, '|', user_agent, '|', CAST(DATE(timestamp) AS STRING)))) AS visitor_id
 FROM requests
 WHERE path = '/resume.pdf'
   AND status IN (200, 206);
+
+-- The owner-only dashboard uses a security_probes authorized view managed by Terraform.
+-- It contains only day and 404 path; it never exposes IPs, user agents, or full URLs.
 
 -- 7. Downloads per day: requests, and distinct people (the safer number, because a PDF
 --    viewer can fetch the same file in several pieces)
@@ -137,7 +144,7 @@ LIMIT 20;
 SELECT
   REGEXP_EXTRACT(httpRequest.requestUrl, r'^https?://[^/]+(/[^?#]*)') AS path,
   COUNT(*) AS hits
-FROM `cloud-portfolio-509107.hosting_logs.*`
+FROM `cloud-portfolio-509107.hosting_logs.firebasehosting_googleapis_com_webrequests`
 WHERE httpRequest.status = 404
 GROUP BY path
 ORDER BY hits DESC

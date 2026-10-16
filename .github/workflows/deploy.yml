@@ -6,6 +6,8 @@ on:
     paths:
       - 'infra/**'
       - 'backend/**'
+      - 'site/**'
+      - 'firebase.json'
       - '.github/workflows/deploy.yml'
 
 jobs:
@@ -50,6 +52,8 @@ jobs:
       
       - name: Build Astro Site
         working-directory: ./site
+        env:
+          PUBLIC_GOOGLE_OAUTH_CLIENT_ID: ${{ vars.GOOGLE_OAUTH_CLIENT_ID }}
         run: npm run build
 
       - name: Deploy to Firebase Hosting
@@ -93,4 +97,10 @@ jobs:
             --concurrency 20 \
             --service-account visitor-api-sa@cloud-portfolio-509107.iam.gserviceaccount.com \
             --allow-unauthenticated \
+            --set-env-vars="GOOGLE_OAUTH_CLIENT_ID=${{ vars.GOOGLE_OAUTH_CLIENT_ID }},ANALYTICS_ADMIN_EMAIL=racell.sincioco@gmail.com" \
             --project cloud-portfolio-509107
+
+      - name: Verify resume analytics endpoint
+        run: |
+          curl --fail-with-body --retry 5 --retry-delay 5 \
+            https://visitor-api-pauw6umqta-uc.a.run.app/api/resume-downloads
