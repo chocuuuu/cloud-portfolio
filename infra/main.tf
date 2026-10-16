@@ -201,6 +201,10 @@ resource "google_firestore_document" "visitor_count" {
     collection = "visitors"
     document_id = "count"
     fields = "{\"count\": {\"integerValue\":\"0\"}}"
+
+    lifecycle {
+        ignore_changes = [fields]
+    }
 }
 
 # Provision Firebase project
