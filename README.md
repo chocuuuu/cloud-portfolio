@@ -48,7 +48,16 @@ Before deploying the dashboard:
    `CREATE OR REPLACE VIEW` statements in `analytics/hosting-logs.sql`.
    Terraform creates the aggregate-only `security_probes` view and grants the
    API service account access only to these views.
-4. Deploy the `main` branch. The workflow applies the view permissions, builds
+4. Before the first deployment that manages authorized views, have a BigQuery
+   administrator grant
+   `github-actions-deployer@cloud-portfolio-509107.iam.gserviceaccount.com`
+   permission to update the `hosting_logs` dataset access policy. The simplest
+   option is the dataset-scoped `roles/bigquery.dataOwner` role; a custom role
+   limited to `bigquery.datasets.get` and `bigquery.datasets.update` is narrower.
+   Terraform needs this permission to authorize the views in `analytics`.
+   Grant it to the deployment identity, not the `visitor-api-sa` runtime
+   identity, which must not have access to raw Hosting logs.
+5. Deploy the `main` branch. The workflow applies the view permissions, builds
    the site with the OAuth client ID, deploys the Cloud Run API, and checks
    that `GET https://visitor-api-pauw6umqta-uc.a.run.app/api/resume-downloads`
    returns an aggregate count.

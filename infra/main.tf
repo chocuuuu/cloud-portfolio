@@ -108,7 +108,9 @@ resource "google_bigquery_table" "security_probes_view" {
     table_id   = "security_probes"
 
     view {
-        query = <<-SQL
+        # Keep BigQuery's stored query line endings stable across Windows and Linux Terraform runs.
+        query = replace(
+            replace(<<-SQL
             WITH requests AS (
                 SELECT
                     timestamp,
@@ -121,6 +123,10 @@ resource "google_bigquery_table" "security_probes_view" {
             WHERE status = 404
               AND path IS NOT NULL
         SQL
+            , "\r\n", "\n"),
+            "\n",
+            "\r\n"
+        )
         use_legacy_sql = false
     }
 
