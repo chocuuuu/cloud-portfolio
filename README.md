@@ -41,7 +41,10 @@ Before deploying the dashboard:
 2. The workflow uses this public client ID by default. If it changes, override
    it with the `GOOGLE_OAUTH_CLIENT_ID` GitHub Actions repository variable;
    this is public configuration, not a client secret. The workflow sets
-   `ANALYTICS_ADMIN_EMAIL` to the dashboard owner account.
+   `ANALYTICS_ADMIN_EMAIL` to the dashboard owner account. For a manual local
+   Hosting deploy, run `npm run build` in `site/` before
+   `firebase deploy --only hosting`; deploying Hosting alone does not rebuild
+   the site.
 3. Ensure Firebase Hosting logs are exported to the BigQuery `hosting_logs`
    dataset and the `analytics` dataset exists. Create/update the
    `page_views` and `resume_downloads` views by running the corresponding
