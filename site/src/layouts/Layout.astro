@@ -157,8 +157,14 @@ const commands = [
               aria-label="Loading resume download count"
               aria-live="polite">–</span
             >
-            <span class="badge views-badge" title="Counted from BigQuery Hosting logs">
-              <i class="dot live" aria-hidden="true"></i>Live · BigQuery
+            <span
+              class="badge views-badge"
+              id="downloads-status"
+              data-state="checking"
+              title="Counted from BigQuery Hosting logs"
+            >
+              <i class="dot" aria-hidden="true"></i>
+              <span data-status-text>Checking · BigQuery</span>
             </span>
           </div>
 
@@ -183,6 +189,7 @@ const commands = [
             </svg>
             <span>Download resume</span>
           </a>
+          <a href="/admin/analytics/" class="analytics-link">Owner analytics</a>
         </div>
       </header>
 
@@ -410,11 +417,29 @@ const commands = [
 
       const resumeDownloads = document.getElementById("resume-downloads");
       const downloadsCount = document.getElementById("downloads-count");
+      const downloadsStatus = document.getElementById("downloads-status");
 
       if (resumeDownloads && downloadsCount) {
-        const showDownloads = (text: string, label: string) => {
+        const showDownloads = (
+          text: string,
+          label: string,
+          state: "up" | "down" | "cached",
+        ) => {
           downloadsCount.textContent = text;
           downloadsCount.setAttribute("aria-label", label);
+          downloadsStatus?.setAttribute("data-state", state);
+          const statusText = downloadsStatus?.querySelector("[data-status-text]");
+          if (statusText) {
+            statusText.textContent =
+              state === "up"
+                ? "Live · BigQuery"
+                : state === "cached"
+                  ? "Cached · BigQuery"
+                  : "Unavailable · BigQuery";
+          }
+          downloadsStatus
+            ?.querySelector(".dot")
+            ?.classList.toggle("live", state === "up");
         };
 
         let cachedDownloads: string | null = null;
@@ -423,7 +448,11 @@ const commands = [
         } catch {}
 
         if (cachedDownloads) {
-          showDownloads(cachedDownloads, `${cachedDownloads} resume downloads`);
+          showDownloads(
+            cachedDownloads,
+            `${cachedDownloads} cached resume downloads`,
+            "cached",
+          );
         } else {
           fetch(resumeDownloads.dataset.api as string)
             .then((res) => {
@@ -439,10 +468,14 @@ const commands = [
               try {
                 sessionStorage.setItem("resume-downloads-count", text);
               } catch {}
-              showDownloads(text, `${text} resume downloads`);
+              showDownloads(text, `${text} resume downloads`, "up");
             })
             .catch(() => {
-              showDownloads("Unavailable", "Resume download count unavailable");
+              showDownloads(
+                "Unavailable",
+                "Resume download count unavailable",
+                "down",
+              );
             });
         }
       }
@@ -1203,6 +1236,28 @@ const commands = [
 
   .views-badge {
     margin-top: 0.4rem;
+  }
+
+  .views-badge[data-state="up"] .dot {
+    background: var(--live);
+  }
+
+  .views-badge[data-state="down"] .dot {
+    background: var(--alert);
+  }
+
+  .views-badge[data-state="cached"] .dot {
+    background: var(--ink-soft);
+  }
+
+  .analytics-link {
+    align-self: flex-start;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+
+  .analytics-link:hover {
+    color: var(--ink);
   }
 
   .views[data-loading] .views-badge {
