@@ -93,6 +93,52 @@ resource "google_bigquery_table_iam_member" "visitor_api_resume_view" {
     depends_on = [google_project_service.bigquery_api]
 }
 
+resource "google_bigquery_table_iam_member" "visitor_api_page_views_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "analytics"
+    table_id   = "page_views"
+    role       = "roles/bigquery.dataViewer"
+    member     = "serviceAccount:${data.google_service_account.visitor_api.email}"
+    depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_bigquery_table" "security_probes_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "analytics"
+    table_id   = "security_probes"
+
+    view {
+        query = <<-SQL
+            WITH requests AS (
+                SELECT
+                    timestamp,
+                    REGEXP_EXTRACT(httpRequest.requestUrl, r'^https?://[^/]+(/[^?#]*)') AS path,
+                    httpRequest.status AS status
+                FROM `cloud-portfolio-509107.hosting_logs.firebasehosting_googleapis_com_webrequests`
+            )
+            SELECT DATE(timestamp) AS day, path
+            FROM requests
+            WHERE status = 404
+              AND path IS NOT NULL
+        SQL
+        use_legacy_sql = false
+    }
+
+    depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_bigquery_table_iam_member" "visitor_api_security_probes_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "analytics"
+    table_id   = "security_probes"
+    role       = "roles/bigquery.dataViewer"
+    member     = "serviceAccount:${data.google_service_account.visitor_api.email}"
+    depends_on = [
+        google_project_service.bigquery_api,
+        google_bigquery_table.security_probes_view
+    ]
+}
+
 resource "google_bigquery_dataset_access" "resume_downloads_authorized_view" {
     project    = "cloud-portfolio-509107"
     dataset_id = "hosting_logs"
@@ -104,6 +150,35 @@ resource "google_bigquery_dataset_access" "resume_downloads_authorized_view" {
     }
 
     depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_bigquery_dataset_access" "page_views_authorized_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "hosting_logs"
+
+    view {
+        project_id = "cloud-portfolio-509107"
+        dataset_id = "analytics"
+        table_id   = "page_views"
+    }
+
+    depends_on = [google_project_service.bigquery_api]
+}
+
+resource "google_bigquery_dataset_access" "security_probes_authorized_view" {
+    project    = "cloud-portfolio-509107"
+    dataset_id = "hosting_logs"
+
+    view {
+        project_id = "cloud-portfolio-509107"
+        dataset_id = "analytics"
+        table_id   = "security_probes"
+    }
+
+    depends_on = [
+        google_project_service.bigquery_api,
+        google_bigquery_table.security_probes_view
+    ]
 }
 
 resource "google_service_account_iam_member" "github_deployer_can_act_as_api" {

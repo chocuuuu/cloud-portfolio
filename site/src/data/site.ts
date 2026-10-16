@@ -10,9 +10,11 @@ export const profile = {
   github: "https://github.com/chocuuuu",
   resume: "/resume.pdf",
   visitorApi:
-    "https://visitor-api-240644792863.us-central1.run.app/api/visitor-count",
+    "https://visitor-api-pauw6umqta-uc.a.run.app/api/visitor-count",
   resumeDownloadsApi:
-    "https://visitor-api-240644792863.us-central1.run.app/api/resume-downloads",
+    "https://visitor-api-pauw6umqta-uc.a.run.app/api/resume-downloads",
+  analyticsApi:
+    "https://visitor-api-pauw6umqta-uc.a.run.app/api/admin/analytics",
 };
 
 export type Certification = {

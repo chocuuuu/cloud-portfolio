@@ -1,0 +1,393 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { profile } from "../../data/site";
+
+const googleClientId = import.meta.env.PUBLIC_GOOGLE_OAUTH_CLIENT_ID ?? "";
+---
+
+<Layout title="Private analytics" description="Owner-only portfolio analytics dashboard.">
+  <Fragment slot="head">
+    <meta name="robots" content="noindex, nofollow" />
+  </Fragment>
+
+  <section
+    class="analytics"
+    id="analytics"
+    data-api={profile.analyticsApi}
+    data-client-id={googleClientId}
+  >
+    <p class="eyebrow">Owner access only</p>
+    <h1>Portfolio analytics</h1>
+    <p class="lede">
+      Aggregated traffic, resume downloads, referrers, and 404 probing. Visitor
+      IP addresses and raw request records are never sent to this dashboard.
+    </p>
+
+    <p class="notice" id="setup-notice" role="status" hidden>
+      Google sign-in is not configured yet. Add the Google OAuth web client ID
+      as the <code>GOOGLE_OAUTH_CLIENT_ID</code> GitHub Actions variable, then
+      deploy again.
+    </p>
+
+    <div id="sign-in">
+      <div id="google-sign-in"></div>
+      <p class="status" id="sign-in-status" role="status">
+        Sign in with the owner Google account to load private metrics.
+      </p>
+    </div>
+
+    <div id="dashboard" hidden>
+      <form id="filters" class="filters">
+        <label>
+          From
+          <input id="start-date" type="date" required />
+        </label>
+        <label>
+          To
+          <input id="end-date" type="date" required />
+        </label>
+        <label class="check">
+          <input id="include-bots" type="checkbox" />
+          Include bot requests in traffic charts
+        </label>
+        <label>
+          Display
+          <select id="display-mode">
+            <option value="chart">Charts</option>
+            <option value="table">Tables</option>
+          </select>
+        </label>
+        <label>
+          Filter labels
+          <input id="search" type="search" placeholder="Browser, source, path…" />
+        </label>
+        <button type="submit">Apply dates</button>
+        <button type="button" class="secondary" id="sign-out">Sign out</button>
+      </form>
+
+      <p class="status" id="dashboard-status" role="status" aria-live="polite"></p>
+      <div class="cards" id="summary"></div>
+
+      <p class="notice">
+        Visitor counts are privacy-preserving daily visitor IDs. A person
+        returning on another day is counted again. Country or city is not
+        present in the available Firebase Hosting logs, so this dashboard does
+        not infer or export location.
+      </p>
+      <p class="subtle">
+        Probing counts are 404 requests only; they indicate paths that were not
+        found, not confirmed attacks. The source breakdown uses <code>src</code>
+        tags on resume links. Referrer hosts are shown separately.
+      </p>
+
+      <div class="reports">
+        <section class="report">
+          <h2>Daily activity</h2>
+          <div class="report-content" id="daily"></div>
+        </section>
+        <section class="report">
+          <h2>Browsers</h2>
+          <div class="report-content" id="browsers"></div>
+        </section>
+        <section class="report">
+          <h2>Traffic sources and referrers</h2>
+          <div class="report-content" id="referrers"></div>
+        </section>
+        <section class="report">
+          <h2>Resume link sources</h2>
+          <div class="report-content" id="sources"></div>
+        </section>
+        <section class="report">
+          <h2>404 paths</h2>
+          <div class="report-content" id="probes"></div>
+        </section>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  type AnalyticsRow = {
+    report: string;
+    dimension: string;
+    label: string;
+    day: string | null;
+    eventCount: number;
+    visitorCount: number;
+    botCount: number;
+  };
+
+  type GoogleIdentity = {
+    accounts: {
+      id: {
+        initialize: (options: {
+          client_id: string;
+          callback: (response: { credential: string }) => void;
+        }) => void;
+        renderButton: (
+          element: HTMLElement,
+          options: { theme: string; size: string; text: string },
+        ) => void;
+      };
+    };
+  };
+
+  const root = document.getElementById("analytics") as HTMLElement;
+  const api = root.dataset.api;
+  const clientId = root.dataset.clientId;
+  const signIn = document.getElementById("sign-in") as HTMLElement;
+  const signInButton = document.getElementById("google-sign-in") as HTMLElement;
+  const signInStatus = document.getElementById("sign-in-status") as HTMLElement;
+  const setupNotice = document.getElementById("setup-notice") as HTMLElement;
+  const dashboard = document.getElementById("dashboard") as HTMLElement;
+  const dashboardStatus = document.getElementById("dashboard-status") as HTMLElement;
+  const startDate = document.getElementById("start-date") as HTMLInputElement;
+  const endDate = document.getElementById("end-date") as HTMLInputElement;
+  const includeBots = document.getElementById("include-bots") as HTMLInputElement;
+  const displayMode = document.getElementById("display-mode") as HTMLSelectElement;
+  const search = document.getElementById("search") as HTMLInputElement;
+  const form = document.getElementById("filters") as HTMLFormElement;
+  const signOut = document.getElementById("sign-out") as HTMLButtonElement;
+  const rowsByReport: Record<string, AnalyticsRow[]> = {};
+  let idToken = "";
+
+  const today = new Date();
+  const todayText = today.toISOString().slice(0, 10);
+  const earliest = new Date(today);
+  earliest.setUTCDate(earliest.getUTCDate() - 89);
+  startDate.value = earliest.toISOString().slice(0, 10);
+  endDate.value = todayText;
+  startDate.max = todayText;
+  endDate.max = todayText;
+
+  const reportRows = (report: string) => rowsByReport[report] ?? [];
+
+  function createCard(label: string, value: number, note: string) {
+    const card = document.createElement("article");
+    card.className = "card";
+    const title = document.createElement("span");
+    title.className = "card-label";
+    title.textContent = label;
+    const amount = document.createElement("strong");
+    amount.textContent = value.toLocaleString();
+    const caption = document.createElement("small");
+    caption.textContent = note;
+    card.append(title, amount, caption);
+    return card;
+  }
+
+  function renderSummary() {
+    const target = document.getElementById("summary") as HTMLElement;
+    const pageViews = reportRows("summary").find((row) => row.dimension === "page_views");
+    const downloads = reportRows("summary").find((row) => row.dimension === "resume_downloads");
+    const probes = reportRows("summary").find((row) => row.dimension === "security_probes");
+    const count = (row: AnalyticsRow | undefined) =>
+      row ? row.eventCount + (includeBots.checked ? row.botCount : 0) : 0;
+    const visitorDays = (row: AnalyticsRow | undefined) => row?.visitorCount ?? 0;
+    const bots = reportRows("summary").reduce((sum, row) => sum + row.botCount, 0);
+
+    target.replaceChildren(
+      createCard("Page views", count(pageViews), "human requests, plus bots when selected"),
+      createCard("Unique visitor-days", visitorDays(pageViews), "daily pseudonymous IDs; human traffic"),
+      createCard("Resume downloads", count(downloads), "file requests; plus bots when selected"),
+      createCard("Download visitor-days", visitorDays(downloads), "daily pseudonymous IDs; human traffic"),
+      createCard("Bot requests", bots, "page and resume requests"),
+      createCard("404 probes", probes?.eventCount ?? 0, "not found requests"),
+    );
+  }
+
+  function visibleRows(rows: AnalyticsRow[]) {
+    const query = search.value.trim().toLocaleLowerCase();
+    return rows
+      .filter((row) => !query || row.label.toLocaleLowerCase().includes(query))
+      .filter((row) => includeBots.checked || row.dimension === "probe_path" || row.botCount === 0 || row.eventCount > 0);
+  }
+
+  function renderReport(targetId: string, rows: AnalyticsRow[]) {
+    const target = document.getElementById(targetId) as HTMLElement;
+    const filtered = visibleRows(rows);
+    target.replaceChildren();
+
+    if (filtered.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "No matching data for this date range.";
+      target.append(empty);
+      return;
+    }
+
+    if (displayMode.value === "table") {
+      const table = document.createElement("table");
+      const head = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      for (const text of ["Label", "Requests", "Visitor-days", "Bot requests"]) {
+        const cell = document.createElement("th");
+        cell.scope = "col";
+        cell.textContent = text;
+        headerRow.append(cell);
+      }
+      head.append(headerRow);
+      const body = document.createElement("tbody");
+      for (const row of filtered) {
+        const tr = document.createElement("tr");
+        const label = document.createElement("th");
+        label.scope = "row";
+        label.textContent = row.day ? `${row.day} · ${row.dimension.replaceAll("_", " ")}` : row.label;
+        const values = [
+          row.eventCount + (includeBots.checked ? row.botCount : 0),
+          row.visitorCount,
+          row.botCount,
+        ];
+        tr.append(label);
+        for (const value of values) {
+          const cell = document.createElement("td");
+          cell.textContent = value.toLocaleString();
+          tr.append(cell);
+        }
+        body.append(tr);
+      }
+      table.append(head, body);
+      target.append(table);
+      return;
+    }
+
+    const max = Math.max(...filtered.map((row) => row.eventCount + (includeBots.checked ? row.botCount : 0)), 1);
+    for (const row of filtered) {
+      const item = document.createElement("div");
+      item.className = "bar-row";
+      const label = document.createElement("span");
+      label.className = "bar-label";
+      label.textContent = row.day ? `${row.day} · ${row.dimension.replaceAll("_", " ")}` : row.label;
+      const track = document.createElement("span");
+      track.className = "bar-track";
+      const bar = document.createElement("span");
+      bar.className = "bar";
+      const value = row.eventCount + (includeBots.checked ? row.botCount : 0);
+      bar.style.width = `${Math.max((value / max) * 100, value > 0 ? 1 : 0)}%`;
+      track.append(bar);
+      const amount = document.createElement("strong");
+      amount.textContent = value.toLocaleString();
+      item.append(label, track, amount);
+      target.append(item);
+    }
+  }
+
+  function renderDashboard() {
+    renderSummary();
+    renderReport("daily", reportRows("daily"));
+    renderReport("browsers", reportRows("breakdown").filter((row) => row.dimension === "browser"));
+    renderReport("referrers", reportRows("breakdown").filter((row) => row.dimension === "referrer"));
+    renderReport("sources", reportRows("breakdown").filter((row) => row.dimension === "resume_source"));
+    renderReport("probes", reportRows("breakdown").filter((row) => row.dimension === "probe_path"));
+  }
+
+  async function loadAnalytics() {
+    dashboardStatus.textContent = "Loading analytics…";
+    const params = new URLSearchParams({
+      startDate: startDate.value,
+      endDate: endDate.value,
+    });
+    try {
+      const response = await fetch(`${api}?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+        cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ?? `Analytics request failed (${response.status})`);
+      }
+      for (const key of Object.keys(rowsByReport)) delete rowsByReport[key];
+      for (const row of result.rows as AnalyticsRow[]) {
+        (rowsByReport[row.report] ??= []).push(row);
+      }
+      renderDashboard();
+      dashboardStatus.textContent = `Updated for ${startDate.value} through ${endDate.value}.`;
+    } catch (error) {
+      dashboardStatus.textContent = error instanceof Error ? error.message : "Unable to load analytics.";
+    }
+  }
+
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void loadAnalytics();
+  });
+  includeBots.addEventListener("change", renderDashboard);
+  displayMode.addEventListener("change", renderDashboard);
+  search.addEventListener("input", renderDashboard);
+  signOut.addEventListener("click", () => {
+    idToken = "";
+    dashboard.hidden = true;
+    signIn.hidden = false;
+    signInStatus.textContent = "Signed out. Sign in again to load private metrics.";
+  });
+
+  if (!api || !clientId) {
+    setupNotice.hidden = false;
+  } else {
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      const google = (window as Window & { google?: GoogleIdentity }).google;
+      if (!google) {
+        signInStatus.textContent = "Google sign-in could not be loaded. Check the page security policy and try again.";
+        return;
+      }
+      google.accounts.id.initialize({
+        client_id: clientId,
+        callback: ({ credential }) => {
+          idToken = credential;
+          signIn.hidden = true;
+          dashboard.hidden = false;
+          void loadAnalytics();
+        },
+      });
+      google.accounts.id.renderButton(signInButton, {
+        theme: "outline",
+        size: "large",
+        text: "signin_with",
+      });
+    };
+    script.onerror = () => {
+      signInStatus.textContent = "Google sign-in could not be loaded. Check your connection and try again.";
+    };
+    document.head.append(script);
+  }
+</script>
+
+<style>
+  .analytics { max-width: 1100px; }
+  .eyebrow { color: var(--accent, #64d8b1); font-size: .75rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+  .lede { max-width: 70ch; color: var(--muted, #aab4c4); }
+  .notice, .subtle { padding: .9rem 1rem; border: 1px solid var(--line, #334155); border-radius: .75rem; color: var(--muted, #aab4c4); }
+  .notice { background: color-mix(in srgb, var(--accent, #64d8b1) 7%, transparent); }
+  .subtle { font-size: .9rem; }
+  .filters { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem; margin: 1.5rem 0; }
+  .filters label { display: grid; gap: .35rem; font-size: .82rem; }
+  .filters .check { display: flex; align-items: center; gap: .45rem; min-height: 2.6rem; }
+  input, select, button { min-height: 2.6rem; padding: .45rem .65rem; border: 1px solid var(--line, #334155); border-radius: .5rem; color: inherit; background: var(--surface, #101722); font: inherit; }
+  input[type="checkbox"] { min-height: auto; accent-color: var(--accent, #64d8b1); }
+  button { cursor: pointer; background: var(--accent, #64d8b1); color: #09120f; font-weight: 700; }
+  button.secondary { background: transparent; color: inherit; }
+  .status { min-height: 1.5rem; color: var(--muted, #aab4c4); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .8rem; margin: 1.4rem 0; }
+  .card { display: grid; gap: .4rem; padding: 1rem; border: 1px solid var(--line, #334155); border-radius: .8rem; background: var(--surface, #101722); }
+  .card-label, .card small, .empty { color: var(--muted, #aab4c4); }
+  .card strong { font-size: 1.65rem; }
+  .card small { line-height: 1.35; }
+  .reports { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; }
+  .report { min-width: 0; padding: 1rem; border: 1px solid var(--line, #334155); border-radius: .8rem; }
+  .report h2 { margin-top: 0; font-size: 1.05rem; }
+  .report-content { display: grid; gap: .65rem; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(70px, 2fr) auto; align-items: center; gap: .6rem; font-size: .85rem; }
+  .bar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { height: .55rem; overflow: hidden; border-radius: 1rem; background: var(--line, #334155); }
+  .bar { display: block; height: 100%; border-radius: inherit; background: var(--accent, #64d8b1); }
+  .report table { width: 100%; border-collapse: collapse; font-size: .84rem; text-align: left; }
+  .report th, .report td { padding: .45rem; border-bottom: 1px solid var(--line, #334155); }
+  .report td { text-align: right; }
+  @media (max-width: 600px) {
+    .bar-row { grid-template-columns: minmax(70px, 1fr) minmax(45px, 1.2fr) auto; gap: .4rem; font-size: .75rem; }
+  }
+</style>
